@@ -1,0 +1,703 @@
+import { useState, useEffect, useCallback, useRef } from 'react';
+import { useLocation, useNavigate } from 'react-router-dom';
+import Sidebar from '../components/Layout/Sidebar';
+import Navbar from '../components/Layout/Navbar';
+import AnswerBoard from '../components/Game/AnswerBoard';
+import Timer from '../components/Game/Timer';
+import StrikeIndicator from '../components/Game/StrikeIndicator';
+import AnswerInput from '../components/Game/AnswerInput';
+import TeamRoulette from '../components/Game/TeamRoulette';
+import { getRandomQuestion } from '../services/api';
+import useTimer from '../hooks/useTimer';
+
+const WIN_SCORE = 500;
+const MAX_STRIKES = 3;
+
+// Normalize text for comparison (remove accents, lowercase, trim)
+const normalizeText = (text) =>
+  text.toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '').trim();
+
+const levenshtein = (a, b) => {
+  const m = a.length, n = b.length;
+  const dp = Array.from({ length: m + 1 }, (_, i) =>
+    Array.from({ length: n + 1 }, (_, j) => (i === 0 ? j : j === 0 ? i : 0))
+  );
+  for (let i = 1; i <= m; i++)
+    for (let j = 1; j <= n; j++)
+      dp[i][j] = a[i - 1] === b[j - 1] ? dp[i - 1][j - 1] : 1 + Math.min(dp[i - 1][j], dp[i][j - 1], dp[i - 1][j - 1]);
+  return dp[m][n];
+};
+
+const isMatch = (input, target) => {
+  const ni = normalizeText(input);
+  const nt = normalizeText(target);
+  if (ni === nt) return true;
+  if (nt.length > 5 && ni.length > 3) {
+    if (nt.includes(ni) || ni.includes(nt)) return true;
+  }
+  const threshold = Math.max(1, Math.floor(nt.length * 0.25));
+  return levenshtein(ni, nt) <= threshold;
+};
+
+const GamePage = () => {
+  const location = useLocation();
+  const navigate = useNavigate();
+  const { teamA, teamB, categories } = location.state || {}; // <-- read categories
+
+  useEffect(() => {
+    if (!teamA || !teamB) navigate('/teams');
+  }, [teamA, teamB, navigate]);
+
+  const teams = [teamA, teamB];
+
+  // ─── Game State ───────────────────────────────────────────────────────────
+  const [question, setQuestion] = useState(null);
+  const [loading, setLoading] = useState(true);
+  const [scores, setScores] = useState([0, 0]);
+  const [currentTeamIndex, setCurrentTeamIndex] = useState(0);
+  const [activePlayerIndexes, setActivePlayerIndexes] = useState([0, 0]);
+  // Per-turn strikes: only for the active team this turn
+  const [currentStrikes, setCurrentStrikes] = useState(0);
+  const [revealedAnswers, setRevealedAnswers] = useState([]);
+  // phase: 'playing' | 'stealing' | 'roundOver'
+  const [phase, setPhase] = useState('playing');
+  // Which team OWNS the round (earns points if steal fails)
+  const [roundOwnerIndex, setRoundOwnerIndex] = useState(0);
+  const [feedback, setFeedback] = useState(null);
+  const [isInputDisabled, setIsInputDisabled] = useState(false);
+  const [inputValue, setInputValue] = useState('');
+  const [isTimerRunning, setIsTimerRunning] = useState(false);
+  // For "roundOver" phase: reveal all answers before loading next question
+  const [roundOverRevealed, setRoundOverRevealed] = useState([]);
+
+  // Use a ref for scores so timer callbacks always have fresh value
+  const scoresRef = useRef([0, 0]);
+  useEffect(() => { scoresRef.current = scores; }, [scores]);
+
+  // ─── Load Question ────────────────────────────────────────────────────────
+  const loadQuestion = useCallback(async (keepCurrentTeam = false, keepScores = null) => {
+    setLoading(true);
+    setIsTimerRunning(false); // Stop the timer explicitly
+    try {
+      const res = await getRandomQuestion(categories); // <-- pass categories here
+      setQuestion(res.data);
+      setRevealedAnswers(res.data.answers.map(() => false));
+      setCurrentStrikes(0);
+      setPhase('roulette'); // Empieza siempre en la ruleta
+      setRoundOverRevealed([]);
+      setInputValue('');
+      if (keepScores) setScores(keepScores);
+    } catch (err) {
+      console.error(err);
+      if (err.message.includes('obtener pregunta aleatoria')) {
+         alert('No hay más preguntas en las categorías seleccionadas. Volviendo a selección de equipos.');
+         navigate('/teams');
+      }
+    } finally {
+      setLoading(false);
+      // Ruleta starts next, that will reset the timer
+    }
+  }, [categories, navigate]); // <-- add dependencies
+
+  useEffect(() => {
+    loadQuestion();
+  }, [loadQuestion]);
+
+  // Sync roundOwner when currentTeamIndex changes during 'playing' phase
+  useEffect(() => {
+    if (phase === 'playing') {
+      setRoundOwnerIndex(currentTeamIndex);
+    }
+  }, [currentTeamIndex, phase]);
+
+  // ─── Feedback Helper ──────────────────────────────────────────────────────
+  const showFeedback = useCallback((type, message) => {
+    setFeedback({ type, message });
+    setTimeout(() => setFeedback(null), 2000);
+  }, []);
+
+  // ─── Round Over: Reveal answers manually advance  ─────────────────────────
+  const [winnerOnDeck, setWinnerOnDeck] = useState(null); // Stores winner if game won
+  
+  const endRound = useCallback((finalScores, winnerIdx = null) => {
+    setIsTimerRunning(false);
+    setIsInputDisabled(true);
+    setPhase('roundOver');
+    
+    // Reveal all answers
+    setRevealedAnswers(prev => prev.map(() => true));
+    
+    // Save winner if any, do not auto advance
+    if (winnerIdx !== null) {
+      setWinnerOnDeck(winnerIdx);
+    } else {
+      setWinnerOnDeck(null);
+    }
+  }, []);
+
+  const handleNextRound = () => {
+    if (winnerOnDeck !== null) {
+      navigate('/winner', {
+        state: { teams, scores, winnerIndex: winnerOnDeck },
+      });
+    } else {
+      loadQuestion(false, scores);
+    }
+  };
+
+  // ─── Timer Expire ─────────────────────────────────────────────────────────
+  const resetTimerRef = useRef(null);
+
+  const handleTimerExpire = useCallback(() => {
+    setIsTimerRunning(false);
+    setIsInputDisabled(true);
+
+    if (phase === 'playing') {
+      showFeedback('wrong', '¡Tiempo agotado!');
+      
+      const newStrikes = currentStrikes + 1;
+      setCurrentStrikes(newStrikes);
+
+      if (newStrikes >= MAX_STRIKES) {
+        // Max strikes reached → other team steals
+        setTimeout(() => {
+          setCurrentTeamIndex(prev => prev === 0 ? 1 : 0);
+          setCurrentStrikes(0);
+          setPhase('stealing');
+          setIsInputDisabled(false);
+          if (resetTimerRef.current) resetTimerRef.current();
+          setIsTimerRunning(true);
+        }, 1500);
+      } else {
+        setTimeout(() => {
+          setIsInputDisabled(false);
+          if (resetTimerRef.current) resetTimerRef.current();
+          setIsTimerRunning(true);
+        }, 1500);
+      }
+    } else if (phase === 'stealing') {
+      // Time expired during steal → counts as a failed steal.
+      setTimeout(() => {
+        const newScores = [...scoresRef.current];
+
+        // Restore original team who kept their points
+        setCurrentTeamIndex(roundOwnerIndex);
+        setCurrentStrikes(0);
+
+        if (newScores[roundOwnerIndex] >= WIN_SCORE) {
+          endRound(newScores, roundOwnerIndex);
+        } else {
+          endRound(newScores);
+        }
+      }, 1500);
+    }
+  }, [phase, roundOwnerIndex, endRound, currentStrikes, showFeedback]);
+
+  const { timeLeft, resetTimer, stopTimer } = useTimer(handleTimerExpire, isTimerRunning);
+
+  useEffect(() => {
+    resetTimerRef.current = resetTimer;
+  }, [resetTimer]);
+
+  // ─── Answer Submit ────────────────────────────────────────────────────────
+  const handleSubmit = useCallback((input) => {
+    if (!question || isInputDisabled || phase === 'roundOver') return;
+    setIsInputDisabled(true);
+    setIsTimerRunning(false);
+    setInputValue('');
+
+    // Wait 2 seconds before validating (per spec)
+    setTimeout(() => {
+      // Advance active player for current team
+      setActivePlayerIndexes(prev => {
+         const next = [...prev];
+         if (teams[currentTeamIndex]?.players?.length) {
+            next[currentTeamIndex] = (next[currentTeamIndex] + 1) % teams[currentTeamIndex].players.length;
+         }
+         return next;
+      });
+
+      const matchedIndex = question.answers.findIndex(
+        (answer, idx) => !revealedAnswers[idx] && isMatch(input, answer.text)
+      );
+
+      if (matchedIndex !== -1) {
+        // ── CORRECT ─────────────────────────────────────────────────────────
+        const points = question.answers[matchedIndex].points;
+        const newRevealed = [...revealedAnswers];
+        newRevealed[matchedIndex] = true;
+        setRevealedAnswers(newRevealed);
+
+        const newScores = [...scoresRef.current];
+        let stealMessage = '';
+
+        if (phase === 'stealing') {
+          const bankedPoints = question.answers.reduce((sum, ans, idx) => {
+            return revealedAnswers[idx] ? sum + ans.points : sum;
+          }, 0);
+
+          // Original team loses banked points
+          newScores[roundOwnerIndex] -= bankedPoints;
+          if (newScores[roundOwnerIndex] < 0) newScores[roundOwnerIndex] = 0;
+
+          // Stealing team gets banked points + current answer points
+          newScores[currentTeamIndex] += (bankedPoints + points);
+          
+          stealMessage = `¡ROBO! +${bankedPoints + points} PTS`;
+        } else {
+          newScores[currentTeamIndex] += points;
+        }
+
+        setScores(newScores);
+        scoresRef.current = newScores;
+
+        showFeedback('correct', phase === 'stealing' ? stealMessage : `+${points} puntos!`);
+
+        setTimeout(() => {
+          // Check win condition
+          if (newScores[currentTeamIndex] >= WIN_SCORE) {
+            endRound(newScores, currentTeamIndex);
+            return;
+          }
+
+          // Check all answers revealed
+          if (newRevealed.every(Boolean)) {
+            setCurrentStrikes(0);
+            endRound(newScores);
+            return;
+          }
+
+          if (phase === 'stealing') {
+            // Steal successful! The round ends.
+            setCurrentStrikes(0);
+            if (newScores[currentTeamIndex] >= WIN_SCORE) {
+              endRound(newScores, currentTeamIndex);
+            } else {
+              endRound(newScores);
+            }
+            return;
+          }
+
+          setIsInputDisabled(false);
+          resetTimer();
+          setIsTimerRunning(true);
+        }, 1500);
+      } else {
+        // ── WRONG ───────────────────────────────────────────────────────────
+        showFeedback('wrong', '¡Incorrecto!');
+
+        if (phase === 'stealing') {
+          // Steal failed → original round owner keeps the points they banked. 
+          const newScores = [...scoresRef.current];
+
+          setTimeout(() => {
+            // Restore original team before ending round
+            setCurrentTeamIndex(roundOwnerIndex);
+            setCurrentStrikes(0);
+
+            if (newScores[roundOwnerIndex] >= WIN_SCORE) {
+              endRound(newScores, roundOwnerIndex);
+            } else {
+              endRound(newScores);
+            }
+          }, 1500);
+        } else {
+          // Normal strike
+          const newStrikes = currentStrikes + 1;
+          setCurrentStrikes(newStrikes);
+
+          if (newStrikes >= MAX_STRIKES) {
+            // Max strikes reached → other team steals
+            setTimeout(() => {
+              setCurrentTeamIndex(prev => prev === 0 ? 1 : 0);
+              setCurrentStrikes(0);
+              setPhase('stealing');
+              setIsInputDisabled(false);
+              resetTimer();
+              setIsTimerRunning(true);
+            }, 1500);
+          } else {
+            setTimeout(() => {
+              setIsInputDisabled(false);
+              resetTimer();
+              setIsTimerRunning(true);
+            }, 1500);
+          }
+        }
+      }
+    }, 2000);
+  }, [
+    question, revealedAnswers, currentTeamIndex, isInputDisabled,
+    phase, roundOwnerIndex, currentStrikes,
+    showFeedback, endRound, resetTimer,
+  ]);
+
+  if (!teamA || !teamB) return null;
+
+  const currentTeam = teams[currentTeamIndex];
+  const isStealing = phase === 'stealing';
+  const isRoundOver = phase === 'roundOver';
+  const isWarning = timeLeft <= 10;
+
+  if (loading) {
+    return (
+      <div className="layout-wrapper">
+        <Sidebar activePage="game" />
+        <div className="main-content stage-gradient" style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', minHeight: '100vh' }}>
+          <div style={{ textAlign: 'center' }}>
+            <div style={{ fontSize: '3rem', animation: 'spin-slow 1s linear infinite', display: 'inline-block' }}>
+              <span className="material-symbols-outlined" style={{ fontSize: '4rem', color: 'var(--primary)' }}>autorenew</span>
+            </div>
+            <p className="font-headline" style={{ color: 'var(--on-surface-variant)', marginTop: '16px', fontWeight: 700 }}>
+              Cargando pregunta...
+            </p>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
+  return (
+    <div className="layout-wrapper">
+      <Sidebar activePage="game" />
+
+      {phase === 'roulette' && (
+        <TeamRoulette 
+          teams={teams} 
+          onComplete={(winnerIdx) => {
+            setCurrentTeamIndex(winnerIdx);
+            setPhase('playing');
+            setIsInputDisabled(false);
+            resetTimer();
+            setIsTimerRunning(true);
+          }} 
+        />
+      )}
+
+      <div
+        className="main-content stage-gradient"
+        style={{ minHeight: '100vh', position: 'relative', overflow: 'hidden' }}
+      >
+        <Navbar />
+
+        {/* Stage lights */}
+        <div style={{ position: 'fixed', inset: 0, pointerEvents: 'none', zIndex: 0 }}>
+          <div style={{ position: 'absolute', top: '-5%', left: '-5%', width: '400px', height: '400px', background: 'rgba(144,171,255,0.08)', borderRadius: '50%', filter: 'blur(100px)' }} />
+          <div style={{ position: 'absolute', top: '-5%', right: '-5%', width: '400px', height: '400px', background: 'rgba(255,143,6,0.07)', borderRadius: '50%', filter: 'blur(100px)' }} />
+          <div style={{ position: 'absolute', bottom: 0, left: '50%', transform: 'translateX(-50%)', width: '80%', height: '160px', background: 'rgba(55,0,133,0.15)', borderRadius: '50%', filter: 'blur(80px)' }} />
+        </div>
+
+        {/* Feedback bubble */}
+        {feedback && (
+          <div className={`feedback-bubble ${feedback.type}`} style={{ zIndex: 200 }}>
+            {feedback.type === 'correct'
+              ? <span className="material-symbols-outlined" style={{ verticalAlign: 'middle', marginRight: '8px', fontVariationSettings: "'FILL' 1" }}>check_circle</span>
+              : <span className="material-symbols-outlined" style={{ verticalAlign: 'middle', marginRight: '8px', fontVariationSettings: "'FILL' 1" }}>cancel</span>
+            }
+            {feedback.message}
+          </div>
+        )}
+
+        {/* Phase banner */}
+        {isStealing && (
+          <div
+            style={{
+              position: 'fixed',
+              top: '90px',
+              left: '50%',
+              transform: 'translateX(-50%)',
+              zIndex: 60,
+              background: 'linear-gradient(90deg, var(--tertiary-fixed), var(--secondary))',
+              color: 'var(--on-tertiary-fixed)',
+              padding: '8px 32px',
+              borderRadius: '999px',
+              fontFamily: 'Plus Jakarta Sans',
+              fontWeight: 900,
+              fontSize: '0.875rem',
+              textTransform: 'uppercase',
+              letterSpacing: '0.15em',
+              boxShadow: '0 4px 20px rgba(255,208,27,0.4)',
+              animation: 'bounceIn 0.4s ease both',
+            }}
+          >
+            ⚡ {teams[currentTeamIndex].name} puede robar los puntos!
+          </div>
+        )}
+
+        {/* Round Over banner */}
+        {isRoundOver && (
+          <div
+            style={{
+              position: 'fixed',
+              top: '90px',
+              left: '50%',
+              transform: 'translateX(-50%)',
+              zIndex: 60,
+              background: 'linear-gradient(90deg, #1a0050, #370085)',
+              color: 'var(--primary)',
+              padding: '10px 36px',
+              borderRadius: '999px',
+              fontFamily: 'Plus Jakarta Sans',
+              fontWeight: 900,
+              fontSize: '0.9rem',
+              textTransform: 'uppercase',
+              letterSpacing: '0.15em',
+              boxShadow: '0 4px 20px rgba(144,171,255,0.3)',
+              border: '1px solid rgba(144,171,255,0.3)',
+              animation: 'bounceIn 0.4s ease both',
+            }}
+          >
+            🔍 Revelando respuestas...
+          </div>
+        )}
+
+        {/* Main Content */}
+        <main
+          style={{
+            position: 'relative',
+            zIndex: 10,
+            paddingTop: '130px',
+            paddingBottom: '48px',
+            paddingLeft: '40px',
+            paddingRight: '40px',
+            display: 'flex',
+            flexDirection: 'column',
+            alignItems: 'center',
+            gap: '32px',
+            maxWidth: '1200px',
+            margin: '0 auto',
+          }}
+        >
+          {/* Question & Timer */}
+          <section
+            style={{
+              width: '100%',
+              maxWidth: '900px',
+              display: 'flex',
+              flexDirection: 'row',
+              alignItems: 'center',
+              gap: '24px',
+              flexWrap: 'wrap',
+            }}
+          >
+            <div
+              style={{
+                flex: 1,
+                minWidth: '280px',
+                background: 'var(--surface-container-highest)',
+                borderBottom: '4px solid var(--primary-dim)',
+                padding: '28px 32px',
+                borderRadius: '24px',
+                boxShadow: '0 20px 40px rgba(0,0,0,0.3)',
+                position: 'relative',
+                overflow: 'hidden',
+              }}
+            >
+              <div
+                style={{
+                  position: 'absolute',
+                  top: 0,
+                  left: 0,
+                  right: 0,
+                  height: '2px',
+                  background: 'linear-gradient(90deg, transparent, var(--tertiary), transparent)',
+                  opacity: 0.5,
+                }}
+              />
+              <h2
+                className="font-headline"
+                style={{
+                  fontSize: '0.7rem',
+                  fontWeight: 700,
+                  color: 'var(--on-surface-variant)',
+                  letterSpacing: '0.2em',
+                  textTransform: 'uppercase',
+                  marginBottom: '8px',
+                }}
+              >
+                Pregunta de la Ronda
+              </h2>
+              <p
+                className="font-headline"
+                style={{
+                  fontSize: 'clamp(1.1rem, 2.5vw, 1.5rem)',
+                  fontWeight: 800,
+                  color: 'white',
+                  lineHeight: 1.3,
+                }}
+              >
+                {question?.question}
+              </p>
+            </div>
+
+            <Timer timeLeft={timeLeft} isWarning={isWarning} />
+          </section>
+
+          {/* Game Area: Teams + Board */}
+          <section
+            style={{
+              width: '100%',
+              maxWidth: '1100px',
+              display: 'grid',
+              gridTemplateColumns: '1fr 2fr 1fr',
+              gap: '24px',
+              alignItems: 'start',
+            }}
+          >
+            {/* Team A Panel */}
+            <div
+              className="team-panel"
+              style={{
+                border: `2px solid ${currentTeamIndex === 0 ? (isStealing ? 'var(--tertiary)' : 'var(--primary)') : 'transparent'}`,
+                boxShadow: currentTeamIndex === 0 ? `0 0 40px ${isStealing ? 'rgba(255,224,131,0.3)' : 'rgba(144,171,255,0.4)'}` : 'none',
+                opacity: currentTeamIndex !== 0 ? 0.6 : 1,
+                filter: currentTeamIndex !== 0 ? 'grayscale(0.4)' : 'none',
+                transition: 'all 0.3s ease',
+                position: 'relative',
+              }}
+            >
+              {currentTeamIndex === 0 && (
+                <div className={`turn-badge ${isStealing ? 'steal-badge' : ''}`}>
+                  {isStealing ? '¡ROBO!' : 'Turno Activo'}
+                </div>
+              )}
+              <div style={{ width: '80px', height: '80px', borderRadius: '50%', border: '4px solid var(--primary)', background: 'rgba(144,171,255,0.1)', display: 'flex', alignItems: 'center', justifyContent: 'center', boxShadow: currentTeamIndex === 0 ? '0 0 20px rgba(144,171,255,0.4)' : 'none' }}>
+                <span className="material-symbols-outlined" style={{ fontSize: '2.5rem', color: 'var(--primary)', fontVariationSettings: "'FILL' 1" }}>groups</span>
+              </div>
+              <h3 className="font-headline" style={{ fontSize: '1.125rem', fontWeight: 900, color: 'white', textAlign: 'center', marginBottom: 0 }}>{teams[0].name}</h3>
+              {currentTeamIndex === 0 && !isRoundOver && phase !== 'roulette' && (
+                 <p style={{ color: 'var(--tertiary)', fontSize: '0.85rem', fontWeight: 800, textAlign: 'center', marginTop: '4px', marginBottom: '8px' }}>
+                    Jugador: {teams[0].players[activePlayerIndexes[0]]}
+                 </p>
+              )}
+              <div className="team-score">
+                <span style={{ fontSize: '0.65rem', fontWeight: 700, color: 'var(--on-surface-variant)', textTransform: 'uppercase', letterSpacing: '0.15em', marginBottom: '4px' }}>Puntos</span>
+                <span className="team-score-number">{scores[0]}</span>
+              </div>
+            </div>
+
+            {/* Board */}
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
+              <AnswerBoard answers={question?.answers || []} revealedAnswers={revealedAnswers} forceRevealAll={isRoundOver} />
+              <StrikeIndicator strikes={currentStrikes} />
+            </div>
+
+            {/* Team B Panel */}
+            <div
+              className="team-panel"
+              style={{
+                border: `2px solid ${currentTeamIndex === 1 ? (isStealing ? 'var(--tertiary)' : 'var(--secondary)') : 'transparent'}`,
+                boxShadow: currentTeamIndex === 1 ? `0 0 40px ${isStealing ? 'rgba(255,224,131,0.3)' : 'rgba(255,143,6,0.3)'}` : 'none',
+                opacity: currentTeamIndex !== 1 ? 0.6 : 1,
+                filter: currentTeamIndex !== 1 ? 'grayscale(0.4)' : 'none',
+                transition: 'all 0.3s ease',
+                position: 'relative',
+              }}
+            >
+              {currentTeamIndex === 1 && (
+                <div className={`turn-badge ${isStealing ? 'steal-badge' : ''}`}>
+                  {isStealing ? '¡ROBO!' : 'Turno Activo'}
+                </div>
+              )}
+              <div style={{ width: '80px', height: '80px', borderRadius: '50%', border: '4px solid var(--secondary)', background: 'rgba(255,143,6,0.1)', display: 'flex', alignItems: 'center', justifyContent: 'center', boxShadow: currentTeamIndex === 1 ? '0 0 20px rgba(255,143,6,0.4)' : 'none' }}>
+                <span className="material-symbols-outlined" style={{ fontSize: '2.5rem', color: 'var(--secondary)', fontVariationSettings: "'FILL' 1" }}>groups</span>
+              </div>
+              <h3 className="font-headline" style={{ fontSize: '1.125rem', fontWeight: 900, color: 'white', textAlign: 'center', marginBottom: 0 }}>{teams[1].name}</h3>
+              {currentTeamIndex === 1 && !isRoundOver && phase !== 'roulette' && (
+                 <p style={{ color: 'var(--tertiary)', fontSize: '0.85rem', fontWeight: 800, textAlign: 'center', marginTop: '4px', marginBottom: '8px' }}>
+                    Jugador: {teams[1].players[activePlayerIndexes[1]]}
+                 </p>
+              )}
+              <div className="team-score">
+                <span style={{ fontSize: '0.65rem', fontWeight: 700, color: 'var(--on-surface-variant)', textTransform: 'uppercase', letterSpacing: '0.15em', marginBottom: '4px' }}>Puntos</span>
+                <span className="team-score-number orange">{scores[1]}</span>
+              </div>
+            </div>
+          </section>
+
+          {/* Input Area */}
+          <section style={{ width: '100%', maxWidth: '700px', display: 'flex', flexDirection: 'column', gap: '16px', alignItems: 'center' }}>
+            <AnswerInput
+              value={inputValue}
+              onChange={setInputValue}
+              onSubmit={handleSubmit}
+              disabled={isInputDisabled || isRoundOver || phase === 'roulette'}
+              currentTeam={currentTeam?.name}
+              currentPlayer={currentTeam?.players?.[activePlayerIndexes[currentTeamIndex]] || ''}
+            />
+
+            {isRoundOver && (
+               <button
+                 onClick={handleNextRound}
+                 className="btn-primary"
+                 style={{
+                   width: '100%',
+                   padding: '24px',
+                   fontSize: '1.5rem',
+                   fontWeight: 900,
+                   background: 'linear-gradient(90deg, #10b981, #059669)',
+                   border: 'none',
+                   display: 'flex',
+                   alignItems: 'center',
+                   justifyContent: 'center',
+                   gap: '12px',
+                   boxShadow: '0 10px 25px rgba(16,185,129,0.5)',
+                   marginTop: '16px'
+                 }}
+               >
+                 {winnerOnDeck !== null ? 'Ir a Resultados Finales' : 'Siguiente Pregunta'}
+                 <span className="material-symbols-outlined" style={{ fontSize: '2rem' }}>arrow_forward</span>
+               </button>
+            )}
+          </section>
+        </main>
+
+        {/* Terminar Partida Button */}
+        <button
+          onClick={() => {
+            if (window.confirm('¿Seguro que deseas terminar la partida anticipadamente?')) {
+               // Calculate current winner or tie
+               const winnerIdx = scores[0] >= scores[1] ? 0 : 1;
+               navigate('/winner', {
+                 state: { teams, scores, winnerIndex: winnerIdx },
+               });
+            }
+          }}
+          style={{
+            position: 'fixed',
+            bottom: '24px',
+            right: '24px',
+            zIndex: 100,
+            background: 'var(--error, #ef4444)',
+            color: 'white',
+            border: 'none',
+            borderRadius: '999px',
+            padding: '12px 24px',
+            display: 'flex',
+            alignItems: 'center',
+            gap: '8px',
+            fontFamily: 'Plus Jakarta Sans',
+            fontWeight: 800,
+            fontSize: '1rem',
+            cursor: 'pointer',
+            boxShadow: '0 4px 15px rgba(239, 68, 68, 0.4)',
+            transition: 'all 0.2s ease',
+          }}
+          onMouseOver={(e) => {
+            e.currentTarget.style.transform = 'scale(1.05)';
+            e.currentTarget.style.background = '#dc2626';
+          }}
+          onMouseOut={(e) => {
+            e.currentTarget.style.transform = 'scale(1)';
+            e.currentTarget.style.background = 'var(--error, #ef4444)';
+          }}
+        >
+          <span className="material-symbols-outlined" style={{ fontSize: '1.25rem' }}>stop_circle</span>
+          Terminar Partida
+        </button>
+      </div>
+    </div>
+  );
+};
+
+export default GamePage;

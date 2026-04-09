@@ -1,0 +1,140 @@
+import React, { useState, useEffect } from 'react';
+
+const TeamRoulette = ({ teams, onComplete }) => {
+  const [spinning, setSpinning] = useState(false);
+  const [winnerIndex, setWinnerIndex] = useState(null);
+
+  const startSpin = () => {
+    if (spinning) return;
+    setSpinning(true);
+    setWinnerIndex(null);
+
+    // Animación fake de spin
+    // Decidir ganador aleatoriamente:
+    const selectedIndex = Math.floor(Math.random() * 2);
+    
+    // Tarda ~3 seg
+    setTimeout(() => {
+      setWinnerIndex(selectedIndex);
+      setTimeout(() => {
+        onComplete(selectedIndex);
+      }, 2000); // 2 segundos extra para mostrar quién ganó
+    }, 3000);
+  };
+
+  return (
+    <div style={{
+      position: 'fixed',
+      inset: 0,
+      background: 'rgba(0,0,0,0.85)',
+      backdropFilter: 'blur(10px)',
+      zIndex: 9999,
+      display: 'flex',
+      flexDirection: 'column',
+      justifyContent: 'center',
+      alignItems: 'center',
+    }}>
+      <h2 className="font-headline" style={{ 
+        color: 'white', 
+        fontSize: '2.5rem', 
+        marginBottom: '40px',
+        textShadow: '0 0 20px rgba(168,85,247,0.8)' 
+      }}>
+        ¿Quién responde primero?
+      </h2>
+
+      <div style={{ position: 'relative', width: '300px', height: '300px', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+        {/* Marcador puntero */}
+        <div style={{
+          position: 'absolute',
+          top: '-20px',
+          zIndex: 10,
+          color: 'var(--tertiary)',
+          transform: 'rotate(180deg)'
+        }}>
+          <span className="material-symbols-outlined" style={{ fontSize: '3rem', fontVariationSettings: "'FILL' 1" }}>change_history</span>
+        </div>
+
+        {/* Círculo de ruleta */}
+        <div style={{
+          width: '100%',
+          height: '100%',
+          borderRadius: '50%',
+          border: '8px solid rgba(255,255,255,0.1)',
+          position: 'relative',
+          overflow: 'hidden',
+          transition: 'transform 3s cubic-bezier(0.2, 0.8, 0.2, 1)',
+          transform: spinning && winnerIndex === null 
+             ? 'rotate(1440deg)' // gira mucho
+             : winnerIndex !== null 
+                 ? `rotate(${1440 + (winnerIndex === 0 ? 0 : 180)}deg)` // frena en 0 (TeamA) o 180 (TeamB)
+                 : 'rotate(0deg)',
+          boxShadow: '0 0 40px rgba(0,0,0,0.5)',
+        }}>
+           {/* Mitad Team A */}
+           <div style={{
+             position: 'absolute',
+             top: 0, left: 0, right: '50%', bottom: 0,
+             background: 'var(--primary)',
+             display: 'flex',
+             alignItems: 'center',
+             justifyContent: 'center'
+           }}>
+             <span className="font-headline" style={{ color: 'white', transform: 'rotate(-90deg)', fontSize: '1.5rem', fontWeight: 900 }}>
+               {teams[0]?.name || 'Equipo A'}
+             </span>
+           </div>
+           
+           {/* Mitad Team B */}
+           <div style={{
+             position: 'absolute',
+             top: 0, left: '50%', right: 0, bottom: 0,
+             background: 'var(--secondary)',
+             display: 'flex',
+             alignItems: 'center',
+             justifyContent: 'center'
+           }}>
+             <span className="font-headline" style={{ color: 'white', transform: 'rotate(90deg)', fontSize: '1.5rem', fontWeight: 900 }}>
+               {teams[1]?.name || 'Equipo B'}
+             </span>
+           </div>
+        </div>
+      </div>
+
+      {winnerIndex !== null && (
+        <div style={{
+          marginTop: '40px',
+          animation: 'bounceIn 0.5s ease',
+          textAlign: 'center'
+        }}>
+          <p style={{ color: 'rgba(255,255,255,0.7)', fontSize: '1rem', textTransform: 'uppercase' }}>Inicia la ronda:</p>
+          <h3 className="font-headline" style={{ 
+            fontSize: '2.5rem', 
+            color: winnerIndex === 0 ? 'var(--primary)' : 'var(--secondary)' 
+          }}>
+            {teams[winnerIndex]?.name}
+          </h3>
+        </div>
+      )}
+
+      {winnerIndex === null && (
+        <button
+          onClick={startSpin}
+          disabled={spinning}
+          className="btn-primary"
+          style={{
+            marginTop: '40px',
+            padding: '16px 40px',
+            fontSize: '1.25rem',
+            background: 'linear-gradient(90deg, #a855f7, #6366f1)',
+            opacity: spinning ? 0.5 : 1
+          }}
+        >
+          {spinning ? 'Girando...' : 'Girar Ruleta'}
+        </button>
+      )}
+    </div>
+  );
+};
+
+export default TeamRoulette;
