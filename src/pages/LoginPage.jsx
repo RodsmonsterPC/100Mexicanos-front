@@ -4,7 +4,7 @@ import { useAuthContext } from '../contexts/AuthContext';
 import Sidebar from '../components/Layout/Sidebar';
 import Navbar from '../components/Layout/Navbar';
 
-const SERVER_URL = 'http://localhost:5000';
+const SERVER_URL = import.meta.env.VITE_API_URL || 'https://one00mexicanos-back.onrender.com';
 
 const LoginPage = () => {
   const [username, setUsername] = useState('');

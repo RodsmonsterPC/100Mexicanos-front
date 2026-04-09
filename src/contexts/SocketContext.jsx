@@ -3,7 +3,7 @@ import { io } from 'socket.io-client';
 
 const SocketContext = createContext();
 
-const SERVER_URL = 'http://localhost:5000';
+const SERVER_URL = import.meta.env.VITE_API_URL || 'https://one00mexicanos-back.onrender.com';
 
 export const SocketProvider = ({ children }) => {
   const [socket, setSocket] = useState(null);

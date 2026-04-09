@@ -2,7 +2,7 @@ import { useEffect, useState } from 'react';
 import { io } from 'socket.io-client';
 
 // Idealmente, esto podría provenir de un archivo de entorno
-const SERVER_URL = 'http://localhost:5000';
+const SERVER_URL = import.meta.env.VITE_API_URL || 'https://one00mexicanos-back.onrender.com';
 
 export const useSocket = () => {
   const [socket, setSocket] = useState(null);

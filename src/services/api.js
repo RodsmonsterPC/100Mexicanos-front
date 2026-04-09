@@ -1,4 +1,4 @@
-const API_BASE = '/api';
+const API_BASE = import.meta.env.VITE_API_URL ? `${import.meta.env.VITE_API_URL}/api` : 'https://one00mexicanos-back.onrender.com/api';
 
 export const getRandomQuestion = async (categories = []) => {
   let url = `${API_BASE}/questions/random`;
