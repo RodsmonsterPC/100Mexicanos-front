@@ -33,7 +33,7 @@ const Navbar = () => {
           letterSpacing: '0.1em',
         }}
       >
-        100 MEXICANOS
+        100 MEXICANOS DIJERON
       </div>
 
       {/* Desktop Nav Links */}
