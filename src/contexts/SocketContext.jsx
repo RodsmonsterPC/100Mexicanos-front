@@ -10,9 +10,7 @@ export const SocketProvider = ({ children }) => {
   const [connectedRoom, setConnectedRoom] = useState(null);
 
   useEffect(() => {
-    const newSocket = io(SERVER_URL, {
-        transports: ['websocket', 'polling']
-    });
+    const newSocket = io(SERVER_URL);
 
     newSocket.on('connect', () => {
         console.log('🔗 Conectado al servidor WebSocket Global:', newSocket.id);
