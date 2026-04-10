@@ -4,7 +4,7 @@ import Sidebar from '../components/Layout/Sidebar';
 import Navbar from '../components/Layout/Navbar';
 import { useSocketContext } from '../contexts/SocketContext';
 import { useAuthContext } from '../contexts/AuthContext';
-import { getCategories } from '../services/api';
+import { getCategories, getRandomQuestion } from '../services/api';
 
 const avatarColors = ['#6366f1', '#8b5cf6', '#a855f7', '#ec4899', '#f43f5e'];
 
@@ -544,7 +544,7 @@ const TeamSetupPage = () => {
 
   const canClaim = !!user;
 
-  const handleStart = () => {
+  const handleStart = async () => {
     // Validation
     if (!teamA.name.trim() || !teamB.name.trim()) {
       setError('Por favor, ingresa el nombre de ambos equipos.');
@@ -557,28 +557,36 @@ const TeamSetupPage = () => {
       return;
     }
     
-    // Check if there are locks, we can remove 'LCK:' before starting the game
     // Check categories
     if (selectedCategories.length === 0) {
       setError('Por favor, selecciona al menos una categoría de preguntas.');
       return;
     }
 
-    const cleanTeamAPlayers = teamA.players.map(p => p.startsWith('LCK:') ? p.replace('LCK:', '') : p);
-    const cleanTeamBPlayers = teamB.players.map(p => p.startsWith('LCK:') ? p.replace('LCK:', '') : p);
+    try {
+      const res = await getRandomQuestion(selectedCategories);
+      const initialQuestion = res.data;
 
-    const gameState = { 
-      teamA: { ...teamA, players: cleanTeamAPlayers }, 
-      teamB: { ...teamB, players: cleanTeamBPlayers },
-      categories: selectedCategories
-    };
+      const cleanTeamAPlayers = teamA.players.map(p => p.startsWith('LCK:') ? p.replace('LCK:', '') : p);
+      const cleanTeamBPlayers = teamB.players.map(p => p.startsWith('LCK:') ? p.replace('LCK:', '') : p);
 
-    if (socket && connectedRoom) {
-      socket.emit('start_game', { room: connectedRoom, gameState });
+      const gameState = { 
+        teamA: { ...teamA, players: cleanTeamAPlayers }, 
+        teamB: { ...teamB, players: cleanTeamBPlayers },
+        categories: selectedCategories,
+        initialQuestion // pasamos la primera pregunta a toda la sala
+      };
+
+      if (socket && connectedRoom) {
+        socket.emit('start_game', { room: connectedRoom, gameState });
+      }
+
+      setError('');
+      navigate('/game', { state: gameState });
+    } catch (err) {
+      console.error(err);
+      setError('Error al iniciar la partida (no se pudo obtener pregunta).');
     }
-
-    setError('');
-    navigate('/game', { state: gameState });
   };
 
   const toggleCategory = (cat) => {

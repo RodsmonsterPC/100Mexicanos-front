@@ -1,8 +1,26 @@
 import React, { useState, useEffect } from 'react';
 
-const TeamRoulette = ({ teams, onComplete }) => {
+const TeamRoulette = ({ teams, onComplete, socket, connectedRoom }) => {
   const [spinning, setSpinning] = useState(false);
   const [winnerIndex, setWinnerIndex] = useState(null);
+
+  useEffect(() => {
+    if (!socket) return;
+    const handleRouletteSpun = (data) => {
+      setSpinning(true);
+      setWinnerIndex(null);
+      // Animación fake de spin
+      setTimeout(() => {
+        setWinnerIndex(data.winnerIndex);
+        setTimeout(() => {
+          onComplete(data.winnerIndex);
+        }, 2000); 
+      }, 3000);
+    };
+
+    socket.on('roulette_spun', handleRouletteSpun);
+    return () => socket.off('roulette_spun', handleRouletteSpun);
+  }, [socket, onComplete]);
 
   const startSpin = () => {
     if (spinning) return;
@@ -13,6 +31,10 @@ const TeamRoulette = ({ teams, onComplete }) => {
     // Decidir ganador aleatoriamente:
     const selectedIndex = Math.floor(Math.random() * 2);
     
+    if (socket && connectedRoom) {
+      socket.emit('spin_roulette', { room: connectedRoom, winnerIndex: selectedIndex });
+    }
+
     // Tarda ~3 seg
     setTimeout(() => {
       setWinnerIndex(selectedIndex);

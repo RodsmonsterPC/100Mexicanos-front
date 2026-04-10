@@ -9,9 +9,36 @@ import AnswerInput from '../components/Game/AnswerInput';
 import TeamRoulette from '../components/Game/TeamRoulette';
 import { getRandomQuestion } from '../services/api';
 import useTimer from '../hooks/useTimer';
+import { useSocketContext } from '../contexts/SocketContext';
+import { useAuthContext } from '../contexts/AuthContext';
 
 const WIN_SCORE = 500;
 const MAX_STRIKES = 3;
+
+const RemoteCursor = ({ x, y, color, username }) => (
+  <div
+    style={{
+      position: 'fixed',
+      top: y,
+      left: x,
+      zIndex: 9999,
+      pointerEvents: 'none',
+      transform: 'translate(-4px, -4px)',
+      transition: 'top 0.05s linear, left 0.05s linear',
+      display: 'flex',
+      flexDirection: 'column'
+    }}
+  >
+    <svg width="24" height="36" viewBox="0 0 24 36" fill="none" style={{ filter: `drop-shadow(0px 2px 4px rgba(0,0,0,0.5))` }}>
+      <path d="M2.5 2.5L9.5 32.5L14 20L23.5 14L2.5 2.5Z" fill={color} stroke="white" strokeWidth="2" strokeLinejoin="round" />
+    </svg>
+    {username && (
+       <div style={{ background: color, color: 'white', padding: '4px 8px', borderRadius: '8px', fontSize: '0.75rem', fontWeight: 'bold', marginTop: '4px', alignSelf: 'flex-start', boxShadow: '0 2px 5px rgba(0,0,0,0.3)', whiteSpace: 'nowrap' }}>
+          {username}
+       </div>
+    )}
+  </div>
+);
 
 // Normalize text for comparison (remove accents, lowercase, trim)
 const normalizeText = (text) =>
@@ -42,7 +69,13 @@ const isMatch = (input, target) => {
 const GamePage = () => {
   const location = useLocation();
   const navigate = useNavigate();
-  const { teamA, teamB, categories } = location.state || {}; // <-- read categories
+  const { socket, connectedRoom } = useSocketContext();
+  const { user } = useAuthContext();
+  const { teamA, teamB, categories, initialQuestion } = location.state || {};
+
+  const [remoteCursors, setRemoteCursors] = useState({});
+  const myColorRef = useRef(user?.avatarColor || '#10b981');
+  const lastEmitTime = useRef(0);
 
   useEffect(() => {
     if (!teamA || !teamB) navigate('/teams');
@@ -74,34 +107,109 @@ const GamePage = () => {
   const scoresRef = useRef([0, 0]);
   useEffect(() => { scoresRef.current = scores; }, [scores]);
 
+  const broadcastState = useCallback((updates) => {
+    if (socket && connectedRoom) {
+      socket.emit('sync_game_state', { room: connectedRoom, updates });
+    }
+  }, [socket, connectedRoom]);
+
+  useEffect(() => {
+    if (!socket) return;
+    const handleSync = (data) => {
+      const u = data.updates;
+      if (u.scores !== undefined) setScores(u.scores);
+      if (u.currentTeamIndex !== undefined) setCurrentTeamIndex(u.currentTeamIndex);
+      if (u.activePlayerIndexes !== undefined) setActivePlayerIndexes(u.activePlayerIndexes);
+      if (u.currentStrikes !== undefined) setCurrentStrikes(u.currentStrikes);
+      if (u.revealedAnswers !== undefined) setRevealedAnswers(u.revealedAnswers);
+      if (u.phase !== undefined) setPhase(u.phase);
+      if (u.roundOwnerIndex !== undefined) setRoundOwnerIndex(u.roundOwnerIndex);
+      if (u.isInputDisabled !== undefined) setIsInputDisabled(u.isInputDisabled);
+      if (u.feedback) showFeedback(u.feedback.type, u.feedback.message);
+      if (u.winnerOnDeck !== undefined) setWinnerOnDeck(u.winnerOnDeck);
+      
+      // Sync timer strictly via flag
+      if (u.isTimerRunning !== undefined) {
+         if (u.isTimerRunning) {
+             if (resetTimerRef.current) resetTimerRef.current();
+             setIsTimerRunning(true);
+         } else {
+             setIsTimerRunning(false);
+         }
+      }
+    };
+    
+    socket.on('game_state_synced', handleSync);
+
+    const handleMouseMove = (data) => {
+      setRemoteCursors(prev => ({
+        ...prev,
+        [data.id]: { x: data.x, y: data.y, color: data.color, username: data.username, lastSeen: Date.now() }
+      }));
+    };
+    socket.on('mouse_moved', handleMouseMove);
+
+    const interval = setInterval(() => {
+      const now = Date.now();
+      setRemoteCursors(prev => {
+        const next = { ...prev };
+        let changed = false;
+        Object.keys(next).forEach(id => {
+          if (now - next[id].lastSeen > 5000) {
+             delete next[id];
+             changed = true;
+          }
+        });
+        return changed ? next : prev;
+      });
+    }, 2000);
+
+    return () => {
+      socket.off('game_state_synced', handleSync);
+      socket.off('mouse_moved', handleMouseMove);
+      clearInterval(interval);
+    };
+  }, [socket]);
+
   // ─── Load Question ────────────────────────────────────────────────────────
-  const loadQuestion = useCallback(async (keepCurrentTeam = false, keepScores = null) => {
+  const loadQuestion = useCallback(async (keepScores = null, useQ = null) => {
     setLoading(true);
-    setIsTimerRunning(false); // Stop the timer explicitly
+    setIsTimerRunning(false);
     try {
-      const res = await getRandomQuestion(categories); // <-- pass categories here
-      setQuestion(res.data);
-      setRevealedAnswers(res.data.answers.map(() => false));
+      let q = useQ;
+      if (!q) {
+        const res = await getRandomQuestion(categories);
+        q = res.data;
+      }
+      setQuestion(q);
+      setRevealedAnswers(q.answers.map(() => false));
       setCurrentStrikes(0);
-      setPhase('roulette'); // Empieza siempre en la ruleta
+      setPhase('roulette');
       setRoundOverRevealed([]);
       setInputValue('');
       if (keepScores) setScores(keepScores);
     } catch (err) {
       console.error(err);
-      if (err.message.includes('obtener pregunta aleatoria')) {
+      if (err.message && err.message.includes('obtener pregunta aleatoria')) {
          alert('No hay más preguntas en las categorías seleccionadas. Volviendo a selección de equipos.');
          navigate('/teams');
       }
     } finally {
       setLoading(false);
-      // Ruleta starts next, that will reset the timer
     }
-  }, [categories, navigate]); // <-- add dependencies
+  }, [categories, navigate]);
 
   useEffect(() => {
-    loadQuestion();
-  }, [loadQuestion]);
+    // Only load initial on first mount
+    loadQuestion(null, initialQuestion);
+  }, [loadQuestion, initialQuestion]);
+
+  useEffect(() => {
+    if (!socket) return;
+    const handleNextQ = (data) => loadQuestion(scoresRef.current, data.question);
+    socket.on('question_advanced', handleNextQ);
+    return () => socket.off('question_advanced', handleNextQ);
+  }, [socket, loadQuestion]);
 
   // Sync roundOwner when currentTeamIndex changes during 'playing' phase
   useEffect(() => {
@@ -125,7 +233,8 @@ const GamePage = () => {
     setPhase('roundOver');
     
     // Reveal all answers
-    setRevealedAnswers(prev => prev.map(() => true));
+    const allRevealed = question?.answers.map(() => true) || [];
+    setRevealedAnswers(allRevealed);
     
     // Save winner if any, do not auto advance
     if (winnerIdx !== null) {
@@ -133,15 +242,29 @@ const GamePage = () => {
     } else {
       setWinnerOnDeck(null);
     }
-  }, []);
 
-  const handleNextRound = () => {
+    broadcastState({
+      isTimerRunning: false,
+      isInputDisabled: true,
+      phase: 'roundOver',
+      revealedAnswers: allRevealed,
+      winnerOnDeck: winnerIdx !== null ? winnerIdx : null
+    });
+  }, [question, broadcastState]);
+
+  const handleNextRound = async () => {
     if (winnerOnDeck !== null) {
       navigate('/winner', {
         state: { teams, scores, winnerIndex: winnerOnDeck },
       });
     } else {
-      loadQuestion(false, scores);
+      try {
+        const res = await getRandomQuestion(categories);
+        if (socket && connectedRoom) socket.emit('next_question', { room: connectedRoom, question: res.data });
+        loadQuestion(scoresRef.current, res.data);
+      } catch (err) {
+        console.error(err);
+      }
     }
   };
 
@@ -157,32 +280,33 @@ const GamePage = () => {
       
       const newStrikes = currentStrikes + 1;
       setCurrentStrikes(newStrikes);
+      broadcastState({ isTimerRunning: false, isInputDisabled: true, currentStrikes: newStrikes, feedback: { type: 'wrong', message: '¡Tiempo agotado!' } });
 
       if (newStrikes >= MAX_STRIKES) {
-        // Max strikes reached → other team steals
         setTimeout(() => {
-          setCurrentTeamIndex(prev => prev === 0 ? 1 : 0);
+          const nextTeamIdx = currentTeamIndex === 0 ? 1 : 0;
+          setCurrentTeamIndex(nextTeamIdx);
           setCurrentStrikes(0);
           setPhase('stealing');
           setIsInputDisabled(false);
-          if (resetTimerRef.current) resetTimerRef.current();
           setIsTimerRunning(true);
+          broadcastState({ currentTeamIndex: nextTeamIdx, currentStrikes: 0, phase: 'stealing', isInputDisabled: false, isTimerRunning: true });
         }, 1500);
       } else {
         setTimeout(() => {
           setIsInputDisabled(false);
-          if (resetTimerRef.current) resetTimerRef.current();
           setIsTimerRunning(true);
+          broadcastState({ isInputDisabled: false, isTimerRunning: true });
         }, 1500);
       }
     } else if (phase === 'stealing') {
-      // Time expired during steal → counts as a failed steal.
+      broadcastState({ isTimerRunning: false, isInputDisabled: true, feedback: { type: 'wrong', message: '¡Tiempo agotado!' } });
       setTimeout(() => {
         const newScores = [...scoresRef.current];
-
-        // Restore original team who kept their points
         setCurrentTeamIndex(roundOwnerIndex);
         setCurrentStrikes(0);
+        
+        broadcastState({ currentTeamIndex: roundOwnerIndex, currentStrikes: 0 });
 
         if (newScores[roundOwnerIndex] >= WIN_SCORE) {
           endRound(newScores, roundOwnerIndex);
@@ -191,7 +315,7 @@ const GamePage = () => {
         }
       }, 1500);
     }
-  }, [phase, roundOwnerIndex, endRound, currentStrikes, showFeedback]);
+  }, [phase, roundOwnerIndex, endRound, currentStrikes, showFeedback, broadcastState, currentTeamIndex]);
 
   const { timeLeft, resetTimer, stopTimer } = useTimer(handleTimerExpire, isTimerRunning);
 
@@ -209,13 +333,11 @@ const GamePage = () => {
     // Wait 2 seconds before validating (per spec)
     setTimeout(() => {
       // Advance active player for current team
-      setActivePlayerIndexes(prev => {
-         const next = [...prev];
-         if (teams[currentTeamIndex]?.players?.length) {
-            next[currentTeamIndex] = (next[currentTeamIndex] + 1) % teams[currentTeamIndex].players.length;
-         }
-         return next;
-      });
+      let nextPlayerIndexes = [...activePlayerIndexes];
+      if (teams[currentTeamIndex]?.players?.length) {
+         nextPlayerIndexes[currentTeamIndex] = (nextPlayerIndexes[currentTeamIndex] + 1) % teams[currentTeamIndex].players.length;
+      }
+      setActivePlayerIndexes(nextPlayerIndexes);
 
       const matchedIndex = question.answers.findIndex(
         (answer, idx) => !revealedAnswers[idx] && isMatch(input, answer.text)
@@ -233,8 +355,8 @@ const GamePage = () => {
 
         if (phase === 'stealing') {
           const bankedPoints = question.answers.reduce((sum, ans, idx) => {
-            return revealedAnswers[idx] ? sum + ans.points : sum;
-          }, 0);
+            return newRevealed[idx] ? sum + ans.points : sum;
+          }, 0) - points; // Calculate existing minus new points to find banked
 
           // Original team loses banked points
           newScores[roundOwnerIndex] -= bankedPoints;
@@ -242,7 +364,6 @@ const GamePage = () => {
 
           // Stealing team gets banked points + current answer points
           newScores[currentTeamIndex] += (bankedPoints + points);
-          
           stealMessage = `¡ROBO! +${bankedPoints + points} PTS`;
         } else {
           newScores[currentTeamIndex] += points;
@@ -251,76 +372,84 @@ const GamePage = () => {
         setScores(newScores);
         scoresRef.current = newScores;
 
-        showFeedback('correct', phase === 'stealing' ? stealMessage : `+${points} puntos!`);
+        const fbMsg = phase === 'stealing' ? stealMessage : `+${points} puntos!`;
+        showFeedback('correct', fbMsg);
+
+        broadcastState({ 
+          activePlayerIndexes: nextPlayerIndexes,
+          revealedAnswers: newRevealed, 
+          scores: newScores, 
+          feedback: { type: 'correct', message: fbMsg }
+        });
 
         setTimeout(() => {
-          // Check win condition
           if (newScores[currentTeamIndex] >= WIN_SCORE) {
             endRound(newScores, currentTeamIndex);
             return;
           }
 
-          // Check all answers revealed
           if (newRevealed.every(Boolean)) {
             setCurrentStrikes(0);
+            broadcastState({ currentStrikes: 0 });
             endRound(newScores);
             return;
           }
 
           if (phase === 'stealing') {
-            // Steal successful! The round ends.
             setCurrentStrikes(0);
-            if (newScores[currentTeamIndex] >= WIN_SCORE) {
-              endRound(newScores, currentTeamIndex);
-            } else {
-              endRound(newScores);
-            }
+            broadcastState({ currentStrikes: 0 });
+            if (newScores[currentTeamIndex] >= WIN_SCORE) endRound(newScores, currentTeamIndex);
+            else endRound(newScores);
             return;
           }
 
           setIsInputDisabled(false);
-          resetTimer();
           setIsTimerRunning(true);
+          broadcastState({ isInputDisabled: false, isTimerRunning: true });
         }, 1500);
       } else {
         // ── WRONG ───────────────────────────────────────────────────────────
         showFeedback('wrong', '¡Incorrecto!');
 
         if (phase === 'stealing') {
-          // Steal failed → original round owner keeps the points they banked. 
           const newScores = [...scoresRef.current];
+          broadcastState({ 
+             activePlayerIndexes: nextPlayerIndexes,
+             feedback: { type: 'wrong', message: '¡Incorrecto!' } 
+          });
 
           setTimeout(() => {
-            // Restore original team before ending round
             setCurrentTeamIndex(roundOwnerIndex);
             setCurrentStrikes(0);
+            broadcastState({ currentTeamIndex: roundOwnerIndex, currentStrikes: 0 });
 
-            if (newScores[roundOwnerIndex] >= WIN_SCORE) {
-              endRound(newScores, roundOwnerIndex);
-            } else {
-              endRound(newScores);
-            }
+            if (newScores[roundOwnerIndex] >= WIN_SCORE) endRound(newScores, roundOwnerIndex);
+            else endRound(newScores);
           }, 1500);
         } else {
-          // Normal strike
           const newStrikes = currentStrikes + 1;
           setCurrentStrikes(newStrikes);
+          broadcastState({ 
+             activePlayerIndexes: nextPlayerIndexes,
+             currentStrikes: newStrikes, 
+             feedback: { type: 'wrong', message: '¡Incorrecto!' } 
+          });
 
           if (newStrikes >= MAX_STRIKES) {
-            // Max strikes reached → other team steals
             setTimeout(() => {
-              setCurrentTeamIndex(prev => prev === 0 ? 1 : 0);
+              const nextTeamIdx = currentTeamIndex === 0 ? 1 : 0;
+              setCurrentTeamIndex(nextTeamIdx);
               setCurrentStrikes(0);
               setPhase('stealing');
               setIsInputDisabled(false);
-              resetTimer();
               setIsTimerRunning(true);
+              broadcastState({ currentTeamIndex: nextTeamIdx, currentStrikes: 0, phase: 'stealing', isInputDisabled: false, isTimerRunning: true });
             }, 1500);
           } else {
             setTimeout(() => {
               setIsInputDisabled(false);
-              resetTimer();
               setIsTimerRunning(true);
+              broadcastState({ isInputDisabled: false, isTimerRunning: true });
             }, 1500);
           }
         }
@@ -338,6 +467,22 @@ const GamePage = () => {
   const isStealing = phase === 'stealing';
   const isRoundOver = phase === 'roundOver';
   const isWarning = timeLeft <= 10;
+
+  const handleContainerMouseMove = (e) => {
+    if (!socket || !connectedRoom) return;
+    const now = Date.now();
+    if (now - lastEmitTime.current > 50) {
+      socket.emit('mouse_move', {
+        room: connectedRoom,
+        id: socket.id,
+        x: e.clientX,
+        y: e.clientY,
+        color: myColorRef.current,
+        username: user ? user.username : null
+      });
+      lastEmitTime.current = now;
+    }
+  };
 
   if (loading) {
     return (
@@ -358,18 +503,29 @@ const GamePage = () => {
   }
 
   return (
-    <div className="layout-wrapper">
+    <div className="layout-wrapper" onMouseMove={handleContainerMouseMove}>
       <Sidebar activePage="game" />
+
+      {Object.entries(remoteCursors).map(([id, cur]) => (
+        <RemoteCursor key={id} x={cur.x} y={cur.y} color={cur.color} username={cur.username} />
+      ))}
 
       {phase === 'roulette' && (
         <TeamRoulette 
           teams={teams} 
+          socket={socket}
+          connectedRoom={connectedRoom}
           onComplete={(winnerIdx) => {
             setCurrentTeamIndex(winnerIdx);
             setPhase('playing');
             setIsInputDisabled(false);
-            resetTimer();
             setIsTimerRunning(true);
+            broadcastState({
+              currentTeamIndex: winnerIdx,
+              phase: 'playing',
+              isInputDisabled: false,
+              isTimerRunning: true
+            });
           }} 
         />
       )}
