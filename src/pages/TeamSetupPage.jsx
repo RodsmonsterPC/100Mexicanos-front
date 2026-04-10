@@ -383,6 +383,13 @@ const TeamSetupPage = () => {
     };
     socket.on('game_started', handleGameStarted);
     
+    const handleSyncRoomState = (data) => {
+      if (data.teamA) setTeamA(data.teamA);
+      if (data.teamB) setTeamB(data.teamB);
+      if (data.categories) setSelectedCategories(data.categories);
+    };
+    socket.on('sync_room_state', handleSyncRoomState);
+    
     // Auto remove cursors that have been idle for 5 seconds
     const interval = setInterval(() => {
       const now = Date.now();
@@ -406,6 +413,7 @@ const TeamSetupPage = () => {
       socket.off('team_updated', handleTeamUpdated);
       socket.off('categories_updated', handleCategoriesUpdated);
       socket.off('game_started', handleGameStarted);
+      socket.off('sync_room_state', handleSyncRoomState);
       clearInterval(interval);
     };
   }, [socket, connectedRoom, navigate]);
@@ -633,7 +641,7 @@ const TeamSetupPage = () => {
           }}
         >
           {/* Header */}
-          <header style={{ textAlign: 'center', marginBottom: '48px' }}>
+          <header style={{ textAlign: 'center', marginBottom: '48px', display: 'flex', flexDirection: 'column', alignItems: 'center' }}>
             <h1
               className="font-headline glow-text"
               style={{
@@ -649,6 +657,13 @@ const TeamSetupPage = () => {
             <p style={{ color: 'var(--on-surface-variant)', fontWeight: 500, marginTop: '8px', fontSize: '1.1rem' }}>
               Define a los contendientes de esta noche
             </p>
+            {connectedRoom && (
+              <div style={{ marginTop: '24px', background: 'rgba(168,85,247,0.15)', border: '2px dashed #a855f7', padding: '12px 24px', borderRadius: '16px', display: 'flex', alignItems: 'center', gap: '12px' }}>
+                <span className="material-symbols-outlined" style={{ color: '#a855f7' }}>key</span>
+                <span style={{ color: 'white', fontWeight: 700, fontSize: '1.2rem' }}>CÓDIGO DE SALA:</span>
+                <strong style={{ color: '#a855f7', fontSize: '1.5rem', letterSpacing: '0.1em' }}>{connectedRoom}</strong>
+              </div>
+            )}
           </header>
 
           {/* Error Message */}

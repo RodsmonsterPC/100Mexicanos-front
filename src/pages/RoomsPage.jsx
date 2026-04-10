@@ -31,6 +31,7 @@ const RoomsPage = () => {
       socket.emit('join_room', finalCode);
       setConnectedRoom(finalCode);
       setError('');
+      navigate('/teams');
     } else {
       setError('Error de conexión. Intentando reconectar...');
     }
