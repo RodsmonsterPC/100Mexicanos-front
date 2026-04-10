@@ -11,6 +11,8 @@ import { getRandomQuestion, validateAnswerAPI } from '../services/api';
 import useTimer from '../hooks/useTimer';
 import { useSocketContext } from '../contexts/SocketContext';
 import { useAuthContext } from '../contexts/AuthContext';
+import correctSoundFile from '../assets/sounds/correctSound.mp3';
+import incorrectSoundFile from '../assets/sounds/incorrectSound.mp3';
 
 const WIN_SCORE = 500;
 const MAX_STRIKES = 3;
@@ -263,6 +265,13 @@ const GamePage = () => {
 
   // ─── Feedback Helper ──────────────────────────────────────────────────────
   const showFeedback = useCallback((type, message) => {
+    if (type === 'correct') {
+      const audio = new Audio(correctSoundFile);
+      audio.play().catch(e => console.log('Audio play failed:', e));
+    } else if (type === 'wrong') {
+      const audio = new Audio(incorrectSoundFile);
+      audio.play().catch(e => console.log('Audio play failed:', e));
+    }
     setFeedback({ type, message });
     setTimeout(() => setFeedback(null), 2000);
   }, []);
