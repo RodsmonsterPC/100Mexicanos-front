@@ -1,4 +1,5 @@
 import { Link, useNavigate } from 'react-router-dom';
+import { useSocketContext } from '../../contexts/SocketContext';
 
 const navItems = [
   { icon: 'home', label: 'Inicio', path: '/' },
@@ -8,6 +9,7 @@ const navItems = [
 
 const Sidebar = ({ activePage = 'home' }) => {
   const navigate = useNavigate();
+  const { connectedRoom } = useSocketContext();
 
   const pageMap = {
     home: 'Inicio',
@@ -57,7 +59,16 @@ const Sidebar = ({ activePage = 'home' }) => {
       </nav>
 
       {/* CTA Button */}
-      <div style={{ padding: '0 16px', marginTop: 'auto' }}>
+      <div style={{ padding: '0 16px', marginTop: 'auto', display: 'flex', flexDirection: 'column', gap: '8px' }}>
+        {connectedRoom && activePage !== 'game' && (
+           <button
+             className="btn-primary"
+             style={{ width: '100%', padding: '16px', fontSize: '0.875rem', letterSpacing: '0.05em', background: 'var(--tertiary)' }}
+             onClick={() => navigate('/game')}
+           >
+             VOLVER A PARTIDA
+           </button>
+        )}
         <button
           className="btn-secondary"
           style={{ width: '100%', padding: '16px', fontSize: '0.875rem', letterSpacing: '0.05em' }}

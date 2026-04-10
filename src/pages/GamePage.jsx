@@ -71,17 +71,31 @@ const GamePage = () => {
   const navigate = useNavigate();
   const { socket, connectedRoom } = useSocketContext();
   const { user } = useAuthContext();
-  const { teamA, teamB, categories, initialQuestion } = location.state || {};
+  
+  const [matchData, setMatchData] = useState(() => {
+    let data = location.state;
+    if (!data) {
+      const stored = sessionStorage.getItem('matchState');
+      if (stored) data = JSON.parse(stored);
+    }
+    return data || {};
+  });
 
-  const [remoteCursors, setRemoteCursors] = useState({});
+  const { teamA, teamB, categories, initialQuestion } = matchData;
+
+  useEffect(() => {
+    if (matchData && Object.keys(matchData).length > 0) {
+      sessionStorage.setItem('matchState', JSON.stringify(matchData));
+    }
+  }, [matchData]);
+
+  const teams = [teamA, teamB];
   const myColorRef = useRef(user?.avatarColor || '#10b981');
   const lastEmitTime = useRef(0);
 
   useEffect(() => {
     if (!teamA || !teamB) navigate('/teams');
   }, [teamA, teamB, navigate]);
-
-  const teams = [teamA, teamB];
 
   // ─── Game State ───────────────────────────────────────────────────────────
   const [question, setQuestion] = useState(null);
@@ -141,6 +155,26 @@ const GamePage = () => {
     
     socket.on('game_state_synced', handleSync);
 
+    const handleRoomState = (data) => {
+      if (data.gameState) {
+         handleSync({ updates: data.gameState });
+         if (data.gameState.question) {
+             setQuestion(data.gameState.question);
+         } else if (data.gameState.initialQuestion) {
+             setQuestion(data.gameState.initialQuestion);
+         }
+         setLoading(false);
+      }
+    };
+    socket.on('sync_room_state', handleRoomState);
+
+    const handleGoToWinner = (data) => {
+      navigate('/winner', {
+         state: { teams: data.teams || teams, scores: data.scores || scores, winnerIndex: data.winnerIndex }
+      });
+    };
+    socket.on('go_to_winner', handleGoToWinner);
+
     const handleMouseMove = (data) => {
       setRemoteCursors(prev => ({
         ...prev,
@@ -166,10 +200,12 @@ const GamePage = () => {
 
     return () => {
       socket.off('game_state_synced', handleSync);
+      socket.off('sync_room_state', handleRoomState);
+      socket.off('go_to_winner', handleGoToWinner);
       socket.off('mouse_moved', handleMouseMove);
       clearInterval(interval);
     };
-  }, [socket]);
+  }, [socket, teams, scores, navigate]);
 
   // ─── Load Question ────────────────────────────────────────────────────────
   const loadQuestion = useCallback(async (keepScores = null, useQ = null) => {
@@ -199,10 +235,21 @@ const GamePage = () => {
     }
   }, [categories, navigate]);
 
+  const didInitRef = useRef(false);
+
   useEffect(() => {
-    // Only load initial on first mount
-    loadQuestion(null, initialQuestion);
-  }, [loadQuestion, initialQuestion]);
+    // Only load initial on first mount, or sync context if returning via refresh
+    if (didInitRef.current) return;
+
+    if (location.state) {
+         didInitRef.current = true;
+         loadQuestion(null, initialQuestion);
+    } else if (connectedRoom && socket) {
+         didInitRef.current = true;
+         // Attempt to request missing real-time variables from back
+         socket.emit('request_room_data', { room: connectedRoom });
+    }
+  }, [loadQuestion, initialQuestion, location.state, connectedRoom, socket]);
 
   useEffect(() => {
     if (!socket) return;
@@ -254,9 +301,9 @@ const GamePage = () => {
 
   const handleNextRound = async () => {
     if (winnerOnDeck !== null) {
-      navigate('/winner', {
-        state: { teams, scores, winnerIndex: winnerOnDeck },
-      });
+      const winnerData = { teams, scores, winnerIndex: winnerOnDeck };
+      if (socket && connectedRoom) socket.emit('end_game_winner', { room: connectedRoom, ...winnerData });
+      navigate('/winner', { state: winnerData });
     } else {
       try {
         const res = await getRandomQuestion(categories);

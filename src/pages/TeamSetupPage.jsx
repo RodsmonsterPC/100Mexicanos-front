@@ -379,6 +379,7 @@ const TeamSetupPage = () => {
 
     const handleGameStarted = (data) => {
       setError('');
+      sessionStorage.setItem('matchState', JSON.stringify(data.gameState));
       navigate('/game', { state: data.gameState });
     };
     socket.on('game_started', handleGameStarted);
@@ -582,6 +583,7 @@ const TeamSetupPage = () => {
       }
 
       setError('');
+      sessionStorage.setItem('matchState', JSON.stringify(gameState));
       navigate('/game', { state: gameState });
     } catch (err) {
       console.error(err);

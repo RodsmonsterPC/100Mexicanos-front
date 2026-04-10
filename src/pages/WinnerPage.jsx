@@ -24,9 +24,24 @@ const ConfettiPiece = ({ style, delay, duration }) => (
 );
 
 const WinnerPage = () => {
-  const location = useLocation();
   const navigate = useNavigate();
-  const { teams, scores, winnerIndex } = location.state || {};
+  
+  const [winnerState, setWinnerState] = useState(() => {
+    let data = location.state;
+    if (!data) {
+      const stored = sessionStorage.getItem('winnerState');
+      if (stored) data = JSON.parse(stored);
+    }
+    return data || {};
+  });
+
+  const { teams, scores, winnerIndex } = winnerState;
+
+  useEffect(() => {
+    if (winnerState && Object.keys(winnerState).length > 0) {
+      sessionStorage.setItem('winnerState', JSON.stringify(winnerState));
+    }
+  }, [winnerState]);
 
   const [confetti, setConfetti] = useState([]);
 
