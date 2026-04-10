@@ -366,6 +366,23 @@ const TeamSetupPage = () => {
 
     socket.on('slot_unclaimed', handleSlotUnclaimed);
     
+    const handleTeamUpdated = (data) => {
+      if (data.team === 'A') setTeamA(data.teamData);
+      else if (data.team === 'B') setTeamB(data.teamData);
+    };
+    socket.on('team_updated', handleTeamUpdated);
+
+    const handleCategoriesUpdated = (data) => {
+      setSelectedCategories(data.categories);
+    };
+    socket.on('categories_updated', handleCategoriesUpdated);
+
+    const handleGameStarted = (data) => {
+      setError('');
+      navigate('/game', { state: data.gameState });
+    };
+    socket.on('game_started', handleGameStarted);
+    
     // Auto remove cursors that have been idle for 5 seconds
     const interval = setInterval(() => {
       const now = Date.now();
@@ -386,9 +403,12 @@ const TeamSetupPage = () => {
       socket.off('mouse_moved', handleMouseMove);
       socket.off('slot_claimed', handleSlotClaimed);
       socket.off('slot_unclaimed', handleSlotUnclaimed);
+      socket.off('team_updated', handleTeamUpdated);
+      socket.off('categories_updated', handleCategoriesUpdated);
+      socket.off('game_started', handleGameStarted);
       clearInterval(interval);
     };
-  }, [socket]);
+  }, [socket, connectedRoom, navigate]);
 
   const handleContainerMouseMove = (e) => {
     if (!socket || !connectedRoom) return;
@@ -411,13 +431,17 @@ const TeamSetupPage = () => {
       setTeamA((prev) => {
         const players = [...prev.players];
         players[index] = value;
-        return { ...prev, players };
+        const newTeam = { ...prev, players };
+        if (socket && connectedRoom) socket.emit('update_team', { room: connectedRoom, team: 'A', teamData: newTeam });
+        return newTeam;
       });
     } else {
       setTeamB((prev) => {
         const players = [...prev.players];
         players[index] = value;
-        return { ...prev, players };
+        const newTeam = { ...prev, players };
+        if (socket && connectedRoom) socket.emit('update_team', { room: connectedRoom, team: 'B', teamData: newTeam });
+        return newTeam;
       });
     }
   };
@@ -535,23 +559,30 @@ const TeamSetupPage = () => {
     const cleanTeamAPlayers = teamA.players.map(p => p.startsWith('LCK:') ? p.replace('LCK:', '') : p);
     const cleanTeamBPlayers = teamB.players.map(p => p.startsWith('LCK:') ? p.replace('LCK:', '') : p);
 
+    const gameState = { 
+      teamA: { ...teamA, players: cleanTeamAPlayers }, 
+      teamB: { ...teamB, players: cleanTeamBPlayers },
+      categories: selectedCategories
+    };
+
+    if (socket && connectedRoom) {
+      socket.emit('start_game', { room: connectedRoom, gameState });
+    }
+
     setError('');
-    navigate('/game', { 
-      state: { 
-        teamA: { ...teamA, players: cleanTeamAPlayers }, 
-        teamB: { ...teamB, players: cleanTeamBPlayers },
-        categories: selectedCategories
-      } 
-    });
+    navigate('/game', { state: gameState });
   };
 
   const toggleCategory = (cat) => {
     setSelectedCategories(prev => {
+      let newCategories;
       if (prev.includes(cat)) {
-        return prev.filter(c => c !== cat);
+        newCategories = prev.filter(c => c !== cat);
       } else {
-        return [...prev, cat];
+        newCategories = [...prev, cat];
       }
+      if (socket && connectedRoom) socket.emit('update_categories', { room: connectedRoom, categories: newCategories });
+      return newCategories;
     });
   };
 
@@ -653,7 +684,11 @@ const TeamSetupPage = () => {
               color="var(--primary)"
               borderColor="rgba(144,171,255,0.3)"
               teamData={teamA}
-              onNameChange={(name) => setTeamA((prev) => ({ ...prev, name }))}
+              onNameChange={(name) => setTeamA((prev) => {
+                const newTeam = { ...prev, name };
+                if (socket && connectedRoom) socket.emit('update_team', { room: connectedRoom, team: 'A', teamData: newTeam });
+                return newTeam;
+              })}
               onPlayerChange={(index, value) => handlePlayerChange('A', index, value)}
               onClaimSlot={handleClaimSlot}
               onReleaseSlot={handleReleaseSlot}
@@ -703,7 +738,11 @@ const TeamSetupPage = () => {
               color="var(--secondary)"
               borderColor="rgba(255,143,6,0.3)"
               teamData={teamB}
-              onNameChange={(name) => setTeamB((prev) => ({ ...prev, name }))}
+              onNameChange={(name) => setTeamB((prev) => {
+                const newTeam = { ...prev, name };
+                if (socket && connectedRoom) socket.emit('update_team', { room: connectedRoom, team: 'B', teamData: newTeam });
+                return newTeam;
+              })}
               onPlayerChange={(index, value) => handlePlayerChange('B', index, value)}
               onClaimSlot={handleClaimSlot}
               onReleaseSlot={handleReleaseSlot}
