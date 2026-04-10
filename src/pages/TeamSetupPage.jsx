@@ -220,7 +220,7 @@ const TeamCard = ({ equipo, color, borderColor, teamData, onNameChange, onPlayer
            const isLocked = player.startsWith('LCK:');
            const displayValue = isLocked ? player.replace('LCK:', '') : player;
 
-           const currentUserIdentifier = user?.username || sessionStorage.getItem('guestUsername');
+           const currentUserIdentifier = currentUser?.username || sessionStorage.getItem('guestUsername');
            const isMySlot = !!currentUserIdentifier && player === `LCK:${currentUserIdentifier}`;
 
            return (
