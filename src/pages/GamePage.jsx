@@ -17,6 +17,13 @@ import incorrectSoundFile from '../assets/sounds/incorrectSound.mp3';
 const WIN_SCORE = 500;
 const MAX_STRIKES = 3;
 
+let correctAudio = null;
+let incorrectAudio = null;
+if (typeof window !== 'undefined') {
+  correctAudio = new Audio(correctSoundFile);
+  incorrectAudio = new Audio(incorrectSoundFile);
+}
+
 const RemoteCursor = ({ x, y, color, username }) => (
   <div
     style={{
@@ -266,11 +273,15 @@ const GamePage = () => {
   // ─── Feedback Helper ──────────────────────────────────────────────────────
   const showFeedback = useCallback((type, message) => {
     if (type === 'correct') {
-      const audio = new Audio(correctSoundFile);
-      audio.play().catch(e => console.log('Audio play failed:', e));
+      if (correctAudio) {
+        correctAudio.currentTime = 0;
+        correctAudio.play().catch(e => console.log('Audio play failed:', e));
+      }
     } else if (type === 'wrong') {
-      const audio = new Audio(incorrectSoundFile);
-      audio.play().catch(e => console.log('Audio play failed:', e));
+      if (incorrectAudio) {
+        incorrectAudio.currentTime = 0;
+        incorrectAudio.play().catch(e => console.log('Audio play failed:', e));
+      }
     }
     setFeedback({ type, message });
     setTimeout(() => setFeedback(null), 2000);

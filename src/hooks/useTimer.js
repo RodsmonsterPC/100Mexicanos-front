@@ -23,6 +23,8 @@ const useTimer = (onExpire, isRunning) => {
       return;
     }
 
+    setTimeLeft(TOTAL_TIME);
+
     intervalRef.current = setInterval(() => {
       setTimeLeft((prev) => {
         if (prev <= 1) {
