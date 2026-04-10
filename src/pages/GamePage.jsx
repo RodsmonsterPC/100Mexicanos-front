@@ -90,6 +90,7 @@ const GamePage = () => {
   }, [matchData]);
 
   const teams = [teamA, teamB];
+  const [remoteCursors, setRemoteCursors] = useState({});
   const myColorRef = useRef(user?.avatarColor || '#10b981');
   const lastEmitTime = useRef(0);
 
