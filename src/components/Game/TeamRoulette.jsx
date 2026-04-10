@@ -3,15 +3,19 @@ import React, { useState, useEffect } from 'react';
 const TeamRoulette = ({ teams, onComplete, socket, connectedRoom }) => {
   const [spinning, setSpinning] = useState(false);
   const [winnerIndex, setWinnerIndex] = useState(null);
+  const [showWinner, setShowWinner] = useState(false);
+  const [finalAngle, setFinalAngle] = useState(0);
 
   useEffect(() => {
     if (!socket) return;
     const handleRouletteSpun = (data) => {
       setSpinning(true);
-      setWinnerIndex(null);
-      // Animación fake de spin
+      setWinnerIndex(data.winnerIndex);
+      setFinalAngle(1440 + (data.winnerIndex === 0 ? 90 : 270) + (data.offset || 0));
+      setShowWinner(false);
+
       setTimeout(() => {
-        setWinnerIndex(data.winnerIndex);
+        setShowWinner(true);
         setTimeout(() => {
           onComplete(data.winnerIndex);
         }, 2000); 
@@ -25,19 +29,22 @@ const TeamRoulette = ({ teams, onComplete, socket, connectedRoom }) => {
   const startSpin = () => {
     if (spinning) return;
     setSpinning(true);
-    setWinnerIndex(null);
 
-    // Animación fake de spin
     // Decidir ganador aleatoriamente:
     const selectedIndex = Math.floor(Math.random() * 2);
+    const offset = Math.floor(Math.random() * 60) - 30; // Diferencia ligera para que no caiga perfecto
     
+    setWinnerIndex(selectedIndex);
+    setFinalAngle(1440 + (selectedIndex === 0 ? 90 : 270) + offset);
+    setShowWinner(false);
+
     if (socket && connectedRoom) {
-      socket.emit('spin_roulette', { room: connectedRoom, winnerIndex: selectedIndex });
+      socket.emit('spin_roulette', { room: connectedRoom, winnerIndex: selectedIndex, offset });
     }
 
     // Tarda ~3 seg
     setTimeout(() => {
-      setWinnerIndex(selectedIndex);
+      setShowWinner(true);
       setTimeout(() => {
         onComplete(selectedIndex);
       }, 2000); // 2 segundos extra para mostrar quién ganó
@@ -86,11 +93,7 @@ const TeamRoulette = ({ teams, onComplete, socket, connectedRoom }) => {
           position: 'relative',
           overflow: 'hidden',
           transition: 'transform 3s cubic-bezier(0.2, 0.8, 0.2, 1)',
-          transform: spinning && winnerIndex === null 
-             ? 'rotate(1440deg)' // gira mucho
-             : winnerIndex !== null 
-                 ? `rotate(${1440 + (winnerIndex === 0 ? 0 : 180)}deg)` // frena en 0 (TeamA) o 180 (TeamB)
-                 : 'rotate(0deg)',
+          transform: spinning ? `rotate(${finalAngle}deg)` : 'rotate(0deg)',
           boxShadow: '0 0 40px rgba(0,0,0,0.5)',
         }}>
            {/* Mitad Team A */}
@@ -123,7 +126,7 @@ const TeamRoulette = ({ teams, onComplete, socket, connectedRoom }) => {
         </div>
       </div>
 
-      {winnerIndex !== null && (
+      {showWinner && winnerIndex !== null && (
         <div style={{
           marginTop: '40px',
           animation: 'bounceIn 0.5s ease',
@@ -139,7 +142,7 @@ const TeamRoulette = ({ teams, onComplete, socket, connectedRoom }) => {
         </div>
       )}
 
-      {winnerIndex === null && (
+      {!showWinner && !spinning && (
         <button
           onClick={startSpin}
           disabled={spinning}

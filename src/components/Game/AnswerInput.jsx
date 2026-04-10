@@ -1,6 +1,6 @@
 import { useRef } from 'react';
 
-const AnswerInput = ({ value, onChange, onSubmit, disabled, currentTeam, currentPlayer }) => {
+const AnswerInput = ({ value, onChange, onSubmit, disabled, currentTeam, currentPlayer, typingUser, isLockedByOther, onFocus, onBlur }) => {
   const inputRef = useRef(null);
 
   const handleSubmit = (e) => {
@@ -44,11 +44,13 @@ const AnswerInput = ({ value, onChange, onSubmit, disabled, currentTeam, current
             ref={inputRef}
             type="text"
             className="answer-input-field"
-            placeholder="Escribe tu respuesta aquí..."
+            placeholder={typingUser && isLockedByOther ? `👤 ${typingUser} está escribiendo...` : "Escribe tu respuesta aquí..."}
             value={value}
             onChange={(e) => onChange(e.target.value)}
             onKeyDown={handleKeyDown}
-            disabled={disabled}
+            onFocus={onFocus}
+            onBlur={onBlur}
+            disabled={disabled || isLockedByOther}
             autoComplete="off"
             autoFocus
           />
@@ -71,8 +73,8 @@ const AnswerInput = ({ value, onChange, onSubmit, disabled, currentTeam, current
           style={{
             padding: '20px 32px',
             fontSize: '1rem',
-            opacity: disabled || !value.trim() ? 0.5 : 1,
-            cursor: disabled || !value.trim() ? 'not-allowed' : 'pointer',
+            opacity: disabled || isLockedByOther || !value.trim() ? 0.5 : 1,
+            cursor: disabled || isLockedByOther || !value.trim() ? 'not-allowed' : 'pointer',
           }}
         >
           ENVIAR

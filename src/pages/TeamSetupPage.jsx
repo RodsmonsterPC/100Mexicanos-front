@@ -70,22 +70,26 @@ const PlayerInput = ({ index, value, onChange, teamColor, isFirst, isLocked, onC
       />
     </div>
 
-    {canClaim && !isLocked && !value && (
+    {canClaim && !isLocked && (
       <button
-        onClick={() => onClaim(index)}
+        onClick={() => onClaim(index, value)}
+        title="Ocupar este lugar"
         style={{
           background: teamColor,
           color: 'white',
           border: 'none',
-          padding: '6px 12px',
+          padding: '6px',
           borderRadius: '8px',
-          fontWeight: 'bold',
           cursor: 'pointer',
-          fontSize: '0.8rem',
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'center',
           boxShadow: `0 4px 10px ${teamColor}80`
         }}
       >
-        Ocupar
+        <span className="material-symbols-outlined" style={{ fontSize: '1.2rem' }}>
+           lock_open
+        </span>
       </button>
     )}
 
@@ -216,7 +220,8 @@ const TeamCard = ({ equipo, color, borderColor, teamData, onNameChange, onPlayer
            const isLocked = player.startsWith('LCK:');
            const displayValue = isLocked ? player.replace('LCK:', '') : player;
 
-           const isMySlot = !!currentUser && player === `LCK:${currentUser.username}`;
+           const currentUserIdentifier = user?.username || sessionStorage.getItem('guestUsername');
+           const isMySlot = !!currentUserIdentifier && player === `LCK:${currentUserIdentifier}`;
 
            return (
               <PlayerInput
@@ -229,7 +234,7 @@ const TeamCard = ({ equipo, color, borderColor, teamData, onNameChange, onPlayer
                 isLocked={isLocked}
                 canClaim={canClaim}
                 isMySlot={isMySlot}
-                onClaim={(idx) => onClaimSlot(equipo.includes('A') ? 'A' : 'B', idx)}
+                onClaim={(idx, val) => onClaimSlot(equipo.includes('A') ? 'A' : 'B', idx, val)}
                 onRelease={(idx) => onReleaseSlot(equipo.includes('A') ? 'A' : 'B', idx)}
               />
            );
@@ -430,7 +435,7 @@ const TeamSetupPage = () => {
         x: e.clientX,
         y: e.clientY,
         color: myColorRef.current,
-        username: user ? user.username : null
+        username: user ? user.username : sessionStorage.getItem('guestUsername')
       });
       lastEmitTime.current = now;
     }
@@ -455,14 +460,25 @@ const TeamSetupPage = () => {
     }
   };
 
-  const handleClaimSlot = (team, index) => {
-    if (!user) return;
+  const handleClaimSlot = (team, index, inputValue) => {
+    let targetName = null;
+    if (user) {
+       targetName = user.username;
+    } else {
+       targetName = inputValue;
+       if (!targetName || targetName.trim() === '') {
+           alert('Por favor, escribe un nombre/apodo primero en la casilla antes de bloquear el lugar.');
+           return;
+       }
+       sessionStorage.setItem('guestUsername', targetName.trim());
+       targetName = targetName.trim();
+    }
 
     // Remove user if they already claimed a slot somewhere else
     let oldClaim = null;
-    const claimedIndexA = teamA.players.findIndex(p => p === `LCK:${user.username}`);
+    const claimedIndexA = teamA.players.findIndex(p => p === `LCK:${targetName}`);
     if (claimedIndexA !== -1) oldClaim = { team: 'A', index: claimedIndexA };
-    const claimedIndexB = teamB.players.findIndex(p => p === `LCK:${user.username}`);
+    const claimedIndexB = teamB.players.findIndex(p => p === `LCK:${targetName}`);
     if (claimedIndexB !== -1) oldClaim = { team: 'B', index: claimedIndexB };
 
     if (oldClaim) {
@@ -485,7 +501,7 @@ const TeamSetupPage = () => {
           room: connectedRoom,
           team: oldClaim.team,
           index: oldClaim.index,
-          username: user.username
+          username: targetName
         });
       }
     }
@@ -494,30 +510,30 @@ const TeamSetupPage = () => {
     if (team === 'A') {
       setTeamA(prev => {
          const players = [...prev.players];
-         players[index] = `LCK:${user.username}`;
+         players[index] = `LCK:${targetName}`;
          return { ...prev, players };
       });
     } else {
       setTeamB(prev => {
          const players = [...prev.players];
-         players[index] = `LCK:${user.username}`;
+         players[index] = `LCK:${targetName}`;
          return { ...prev, players };
       });
     }
 
-    // Emit event
     if (socket && connectedRoom) {
       socket.emit('claim_slot', {
         room: connectedRoom,
         team,
         index,
-        username: user.username
+        username: targetName
       });
     }
   };
 
   const handleReleaseSlot = (team, index) => {
-    if (!user) return;
+    const currentUserIdentifier = user?.username || sessionStorage.getItem('guestUsername');
+    if (!currentUserIdentifier) return;
 
     if (team === 'A') {
       setTeamA(prev => {
@@ -538,12 +554,23 @@ const TeamSetupPage = () => {
         room: connectedRoom,
         team,
         index,
-        username: user.username
+        username: currentUserIdentifier
       });
     }
   };
 
-  const canClaim = !!user;
+  const isFormValid =
+    teamA.name.trim() !== '' &&
+    teamB.name.trim() !== '' &&
+    teamA.players[0].trim() !== '' &&
+    teamB.players[0].trim() !== '' &&
+    selectedCategories.length > 0;
+
+  const currentUserIdentifier = user?.username || sessionStorage.getItem('guestUsername');
+  const amIClaimingSlot =
+    teamA.players.some(p => currentUserIdentifier && p === `LCK:${currentUserIdentifier}`) ||
+    teamB.players.some(p => currentUserIdentifier && p === `LCK:${currentUserIdentifier}`);
+  const canClaim = !amIClaimingSlot;
 
   const handleStart = async () => {
     // Validation
@@ -610,7 +637,7 @@ const TeamSetupPage = () => {
 
       {/* RENDER REMOTE CURSORS */}
       {Object.entries(remoteCursors).map(([id, cur]) => (
-        <RemoteCursor key={id} x={cur.x} y={cur.y} color={cur.color} />
+        <RemoteCursor key={id} x={cur.x} y={cur.y} color={cur.color} username={cur.username} />
       ))}
 
       <div

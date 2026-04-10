@@ -95,8 +95,15 @@ const GamePage = () => {
   const lastEmitTime = useRef(0);
 
   useEffect(() => {
-    if (!teamA || !teamB) navigate('/teams');
-  }, [teamA, teamB, navigate]);
+    if (!teamA || !teamB) {
+       if (!connectedRoom || !socket) {
+          navigate('/teams');
+       } else {
+          const timeout = setTimeout(() => navigate('/teams'), 4000);
+          return () => clearTimeout(timeout);
+       }
+    }
+  }, [teamA, teamB, navigate, connectedRoom, socket]);
 
   // ─── Game State ───────────────────────────────────────────────────────────
   const [question, setQuestion] = useState(null);
@@ -115,6 +122,9 @@ const GamePage = () => {
   const [isInputDisabled, setIsInputDisabled] = useState(false);
   const [inputValue, setInputValue] = useState('');
   const [isTimerRunning, setIsTimerRunning] = useState(false);
+  const [typingUser, setTypingUser] = useState(null);
+  const typingTimerRef = useRef(null);
+  const currentUserIdentifier = user?.username || sessionStorage.getItem('guestUsername');
   // For "roundOver" phase: reveal all answers before loading next question
   const [roundOverRevealed, setRoundOverRevealed] = useState([]);
 
@@ -140,6 +150,12 @@ const GamePage = () => {
       if (u.phase !== undefined) setPhase(u.phase);
       if (u.roundOwnerIndex !== undefined) setRoundOwnerIndex(u.roundOwnerIndex);
       if (u.isInputDisabled !== undefined) setIsInputDisabled(u.isInputDisabled);
+      if (u.typingUser !== undefined) {
+         setTypingUser(u.typingUser);
+         if (u.typingUser === null && typingTimerRef.current) {
+            clearTimeout(typingTimerRef.current);
+         }
+      }
       if (u.feedback) showFeedback(u.feedback.type, u.feedback.message);
       if (u.winnerOnDeck !== undefined) setWinnerOnDeck(u.winnerOnDeck);
       
@@ -157,6 +173,9 @@ const GamePage = () => {
     socket.on('game_state_synced', handleSync);
 
     const handleRoomState = (data) => {
+      if (data.teamA && data.teamB) {
+         setMatchData(prev => ({ ...prev, teamA: data.teamA, teamB: data.teamB, ...data.gameState }));
+      }
       if (data.gameState) {
          handleSync({ updates: data.gameState });
          if (data.gameState.question) {
@@ -300,6 +319,18 @@ const GamePage = () => {
     });
   }, [question, broadcastState]);
 
+  // Auto-redirect to the Winner Page after 4 seconds of displaying the final answers
+  useEffect(() => {
+    if (winnerOnDeck !== null) {
+      const winnerData = { teams, scores, winnerIndex: winnerOnDeck };
+      const timeout = setTimeout(() => {
+        if (socket && connectedRoom) socket.emit('end_game_winner', { room: connectedRoom, ...winnerData });
+        navigate('/winner', { state: winnerData });
+      }, 4000);
+      return () => clearTimeout(timeout);
+    }
+  }, [winnerOnDeck, teams, scores, navigate, socket, connectedRoom]);
+
   const handleNextRound = async () => {
     if (winnerOnDeck !== null) {
       const winnerData = { teams, scores, winnerIndex: winnerOnDeck };
@@ -377,6 +408,11 @@ const GamePage = () => {
     setIsInputDisabled(true);
     setIsTimerRunning(false);
     setInputValue('');
+    if (typingTimerRef.current) clearTimeout(typingTimerRef.current);
+
+    // CRITICAL: Stop timer globally IMMEDIATELY and release typing lock
+    broadcastState({ isTimerRunning: false, isInputDisabled: true, typingUser: null });
+    setTypingUser(null);
 
     // Wait 2 seconds before validating (per spec)
     setTimeout(() => {
@@ -526,7 +562,7 @@ const GamePage = () => {
         x: e.clientX,
         y: e.clientY,
         color: myColorRef.current,
-        username: user ? user.username : null
+        username: currentUserIdentifier
       });
       lastEmitTime.current = now;
     }
@@ -823,11 +859,39 @@ const GamePage = () => {
           <section style={{ width: '100%', maxWidth: '700px', display: 'flex', flexDirection: 'column', gap: '16px', alignItems: 'center' }}>
             <AnswerInput
               value={inputValue}
-              onChange={setInputValue}
+              onChange={(val) => {
+                setInputValue(val);
+                if (typingUser === currentUserIdentifier) {
+                  if (typingTimerRef.current) clearTimeout(typingTimerRef.current);
+                  typingTimerRef.current = setTimeout(() => {
+                    broadcastState({ typingUser: null });
+                    setTypingUser(null);
+                  }, 8000);
+                }
+              }}
               onSubmit={handleSubmit}
               disabled={isInputDisabled || isRoundOver || phase === 'roulette'}
               currentTeam={currentTeam?.name}
-              currentPlayer={currentTeam?.players?.[activePlayerIndexes[currentTeamIndex]] || ''}
+              currentPlayer={currentTeam?.players?.[activePlayerIndexes[currentTeamIndex]]?.replace('LCK:', '') || ''}
+              typingUser={typingUser}
+              isLockedByOther={typingUser && typingUser !== currentUserIdentifier}
+              onFocus={() => {
+                if (!currentUserIdentifier || (typingUser && typingUser !== currentUserIdentifier)) return;
+                broadcastState({ typingUser: currentUserIdentifier });
+                setTypingUser(currentUserIdentifier);
+                if (typingTimerRef.current) clearTimeout(typingTimerRef.current);
+                typingTimerRef.current = setTimeout(() => {
+                  broadcastState({ typingUser: null });
+                  setTypingUser(null);
+                }, 8000);
+              }}
+              onBlur={() => {
+                if (typingUser === currentUserIdentifier) {
+                  broadcastState({ typingUser: null });
+                  setTypingUser(null);
+                  if (typingTimerRef.current) clearTimeout(typingTimerRef.current);
+                }
+              }}
             />
 
             {isRoundOver && (
