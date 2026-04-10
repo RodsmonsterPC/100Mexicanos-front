@@ -7,7 +7,7 @@ import Timer from '../components/Game/Timer';
 import StrikeIndicator from '../components/Game/StrikeIndicator';
 import AnswerInput from '../components/Game/AnswerInput';
 import TeamRoulette from '../components/Game/TeamRoulette';
-import { getRandomQuestion } from '../services/api';
+import { getRandomQuestion, validateAnswerAPI } from '../services/api';
 import useTimer from '../hooks/useTimer';
 import { useSocketContext } from '../contexts/SocketContext';
 import { useAuthContext } from '../contexts/AuthContext';
@@ -40,31 +40,7 @@ const RemoteCursor = ({ x, y, color, username }) => (
   </div>
 );
 
-// Normalize text for comparison (remove accents, lowercase, trim)
-const normalizeText = (text) =>
-  text.toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '').trim();
-
-const levenshtein = (a, b) => {
-  const m = a.length, n = b.length;
-  const dp = Array.from({ length: m + 1 }, (_, i) =>
-    Array.from({ length: n + 1 }, (_, j) => (i === 0 ? j : j === 0 ? i : 0))
-  );
-  for (let i = 1; i <= m; i++)
-    for (let j = 1; j <= n; j++)
-      dp[i][j] = a[i - 1] === b[j - 1] ? dp[i - 1][j - 1] : 1 + Math.min(dp[i - 1][j], dp[i][j - 1], dp[i - 1][j - 1]);
-  return dp[m][n];
-};
-
-const isMatch = (input, target) => {
-  const ni = normalizeText(input);
-  const nt = normalizeText(target);
-  if (ni === nt) return true;
-  if (nt.length > 5 && ni.length > 3) {
-    if (nt.includes(ni) || ni.includes(nt)) return true;
-  }
-  const threshold = Math.max(1, Math.floor(nt.length * 0.25));
-  return levenshtein(ni, nt) <= threshold;
-};
+// Frontend text matching logic moved to backend semantic validation
 
 const GamePage = () => {
   const location = useLocation();
@@ -415,7 +391,7 @@ const GamePage = () => {
     setTypingUser(null);
 
     // Wait 2 seconds before validating (per spec)
-    setTimeout(() => {
+    setTimeout(async () => {
       // Advance active player for current team
       let nextPlayerIndexes = [...activePlayerIndexes];
       if (teams[currentTeamIndex]?.players?.length) {
@@ -423,13 +399,21 @@ const GamePage = () => {
       }
       setActivePlayerIndexes(nextPlayerIndexes);
 
-      const matchedIndex = question.answers.findIndex(
-        (answer, idx) => !revealedAnswers[idx] && isMatch(input, answer.text)
-      );
+      let matchedIndex = -1;
+      let points = 0;
+
+      try {
+        const result = await validateAnswerAPI(question._id, input, revealedAnswers);
+        if (result.success && result.isCorrect) {
+          matchedIndex = result.matchedIndex;
+          points = result.points;
+        }
+      } catch (err) {
+        console.error('Error al validar respuesta:', err);
+      }
 
       if (matchedIndex !== -1) {
         // ── CORRECT ─────────────────────────────────────────────────────────
-        const points = question.answers[matchedIndex].points;
         const newRevealed = [...revealedAnswers];
         newRevealed[matchedIndex] = true;
         setRevealedAnswers(newRevealed);
@@ -773,6 +757,70 @@ const GamePage = () => {
             <Timer timeLeft={timeLeft} isWarning={isWarning} />
           </section>
 
+          {/* Input Area */}
+          <section style={{ width: '100%', maxWidth: '700px', display: 'flex', flexDirection: 'column', gap: '16px', alignItems: 'center' }}>
+            <AnswerInput
+              value={inputValue}
+              onChange={(val) => {
+                setInputValue(val);
+                if (typingUser === currentUserIdentifier) {
+                  if (typingTimerRef.current) clearTimeout(typingTimerRef.current);
+                  typingTimerRef.current = setTimeout(() => {
+                    broadcastState({ typingUser: null });
+                    setTypingUser(null);
+                  }, 8000);
+                }
+              }}
+              onSubmit={handleSubmit}
+              disabled={isInputDisabled || isRoundOver || phase === 'roulette'}
+              currentTeam={currentTeam?.name}
+              currentPlayer={currentTeam?.players?.[activePlayerIndexes[currentTeamIndex]]?.replace('LCK:', '') || ''}
+              typingUser={typingUser}
+              isLockedByOther={typingUser && typingUser !== currentUserIdentifier}
+              onFocus={() => {
+                if (!currentUserIdentifier || (typingUser && typingUser !== currentUserIdentifier)) return;
+                broadcastState({ typingUser: currentUserIdentifier });
+                setTypingUser(currentUserIdentifier);
+                if (typingTimerRef.current) clearTimeout(typingTimerRef.current);
+                typingTimerRef.current = setTimeout(() => {
+                  broadcastState({ typingUser: null });
+                  setTypingUser(null);
+                }, 8000);
+              }}
+              onBlur={() => {
+                if (typingUser === currentUserIdentifier) {
+                  broadcastState({ typingUser: null });
+                  setTypingUser(null);
+                  if (typingTimerRef.current) clearTimeout(typingTimerRef.current);
+                }
+              }}
+            />
+
+            {isRoundOver && (
+               <button
+                 onClick={handleNextRound}
+                 className="btn-primary"
+                 style={{
+                   width: '100%',
+                   padding: '24px',
+                   fontSize: '1.5rem',
+                   fontWeight: 900,
+                   background: 'linear-gradient(90deg, #10b981, #059669)',
+                   border: 'none',
+                   display: 'flex',
+                   alignItems: 'center',
+                   justifyContent: 'center',
+                   gap: '12px',
+                   boxShadow: '0 10px 25px rgba(16,185,129,0.5)',
+                   marginTop: '16px'
+                 }}
+               >
+                 {winnerOnDeck !== null ? 'Ir a Resultados Finales' : 'Siguiente Pregunta'}
+                 <span className="material-symbols-outlined" style={{ fontSize: '2rem' }}>arrow_forward</span>
+               </button>
+            )}
+          </section>
+
           {/* Game Area: Teams + Board */}
           <section
             style={{
@@ -853,70 +901,6 @@ const GamePage = () => {
                 <span className="team-score-number orange">{scores[1]}</span>
               </div>
             </div>
-          </section>
-
-          {/* Input Area */}
-          <section style={{ width: '100%', maxWidth: '700px', display: 'flex', flexDirection: 'column', gap: '16px', alignItems: 'center' }}>
-            <AnswerInput
-              value={inputValue}
-              onChange={(val) => {
-                setInputValue(val);
-                if (typingUser === currentUserIdentifier) {
-                  if (typingTimerRef.current) clearTimeout(typingTimerRef.current);
-                  typingTimerRef.current = setTimeout(() => {
-                    broadcastState({ typingUser: null });
-                    setTypingUser(null);
-                  }, 8000);
-                }
-              }}
-              onSubmit={handleSubmit}
-              disabled={isInputDisabled || isRoundOver || phase === 'roulette'}
-              currentTeam={currentTeam?.name}
-              currentPlayer={currentTeam?.players?.[activePlayerIndexes[currentTeamIndex]]?.replace('LCK:', '') || ''}
-              typingUser={typingUser}
-              isLockedByOther={typingUser && typingUser !== currentUserIdentifier}
-              onFocus={() => {
-                if (!currentUserIdentifier || (typingUser && typingUser !== currentUserIdentifier)) return;
-                broadcastState({ typingUser: currentUserIdentifier });
-                setTypingUser(currentUserIdentifier);
-                if (typingTimerRef.current) clearTimeout(typingTimerRef.current);
-                typingTimerRef.current = setTimeout(() => {
-                  broadcastState({ typingUser: null });
-                  setTypingUser(null);
-                }, 8000);
-              }}
-              onBlur={() => {
-                if (typingUser === currentUserIdentifier) {
-                  broadcastState({ typingUser: null });
-                  setTypingUser(null);
-                  if (typingTimerRef.current) clearTimeout(typingTimerRef.current);
-                }
-              }}
-            />
-
-            {isRoundOver && (
-               <button
-                 onClick={handleNextRound}
-                 className="btn-primary"
-                 style={{
-                   width: '100%',
-                   padding: '24px',
-                   fontSize: '1.5rem',
-                   fontWeight: 900,
-                   background: 'linear-gradient(90deg, #10b981, #059669)',
-                   border: 'none',
-                   display: 'flex',
-                   alignItems: 'center',
-                   justifyContent: 'center',
-                   gap: '12px',
-                   boxShadow: '0 10px 25px rgba(16,185,129,0.5)',
-                   marginTop: '16px'
-                 }}
-               >
-                 {winnerOnDeck !== null ? 'Ir a Resultados Finales' : 'Siguiente Pregunta'}
-                 <span className="material-symbols-outlined" style={{ fontSize: '2rem' }}>arrow_forward</span>
-               </button>
-            )}
           </section>
         </main>
 

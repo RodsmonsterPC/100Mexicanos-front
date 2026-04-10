@@ -49,3 +49,15 @@ export const deleteQuestion = async (id) => {
   }
   return response.json();
 };
+
+export const validateAnswerAPI = async (questionId, input, revealed) => {
+  const response = await fetch(`${API_BASE}/questions/${questionId}/validate`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ input, revealed }),
+  });
+  if (!response.ok) {
+    throw new Error('Error al validar respuesta semántica');
+  }
+  return response.json();
+};
