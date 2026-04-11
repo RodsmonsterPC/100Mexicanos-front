@@ -68,11 +68,12 @@ const WinnerPage = () => {
 
   if (!teams) return null;
 
-  const winner = teams[winnerIndex];
-  const loserIndex = winnerIndex === 0 ? 1 : 0;
-  const loser = teams[loserIndex];
-  const winnerScore = scores[winnerIndex];
-  const loserScore = scores[loserIndex];
+  const isTie = winnerIndex === -1;
+  const winner = isTie ? null : teams[winnerIndex];
+  const loserIndex = isTie ? null : (winnerIndex === 0 ? 1 : 0);
+  const loser = isTie ? null : teams[loserIndex];
+  const winnerScore = isTie ? scores[0] : scores[winnerIndex];
+  const loserScore = isTie ? scores[1] : scores[loserIndex];
 
   return (
     <div className="layout-wrapper">
@@ -134,8 +135,8 @@ const WinnerPage = () => {
         >
           {/* Winner Badge */}
           <div className="winner-badge animate-bounce-in">
-            <span className="material-symbols-outlined" style={{ fontVariationSettings: "'FILL' 1", fontSize: '1.25rem' }}>emoji_events</span>
-            ¡TENEMOS GANADOR!
+            <span className="material-symbols-outlined" style={{ fontVariationSettings: "'FILL' 1", fontSize: '1.25rem' }}>{isTie ? 'handshake' : 'emoji_events'}</span>
+            {isTie ? '¡EMPATE TÉCNICO!' : '¡TENEMOS GANADOR!'}
           </div>
 
           {/* Trophy */}
@@ -144,12 +145,12 @@ const WinnerPage = () => {
               className="material-symbols-outlined"
               style={{
                 fontSize: '8rem',
-                color: 'var(--tertiary)',
+                color: isTie ? 'var(--secondary)' : 'var(--tertiary)',
                 fontVariationSettings: "'FILL' 1",
-                filter: 'drop-shadow(0 0 30px rgba(255,224,131,0.6))',
+                filter: `drop-shadow(0 0 30px ${isTie ? 'rgba(255,143,6,0.6)' : 'rgba(255,224,131,0.6)'})`,
               }}
             >
-              emoji_events
+              {isTie ? 'handshake' : 'emoji_events'}
             </span>
           </div>
 
@@ -160,13 +161,13 @@ const WinnerPage = () => {
               style={{
                 fontSize: 'clamp(3rem, 8vw, 6rem)',
                 fontWeight: 900,
-                color: 'var(--tertiary)',
+                color: isTie ? 'var(--secondary)' : 'var(--tertiary)',
                 textTransform: 'uppercase',
                 letterSpacing: '-0.03em',
                 lineHeight: 1,
               }}
             >
-              {winner.name}
+              {isTie ? '¡Empate!' : winner.name}
             </h1>
             <p
               className="font-headline"
@@ -177,7 +178,7 @@ const WinnerPage = () => {
                 marginTop: '8px',
               }}
             >
-              ¡Campeones de esta noche!
+              {isTie ? '¡Ambos equipos jugaron increíble!' : '¡Campeones de esta noche!'}
             </p>
           </div>
 
@@ -191,64 +192,65 @@ const WinnerPage = () => {
               maxWidth: '600px',
             }}
           >
-            {/* Winner Score */}
+            {/* Winner Score or Team A */}
             <div
               style={{
                 background: 'linear-gradient(135deg, rgba(255,224,131,0.2), rgba(255,143,6,0.15))',
-                border: '2px solid var(--tertiary)',
+                border: isTie ? '2px solid var(--primary)' : '2px solid var(--tertiary)',
                 borderRadius: '24px',
                 padding: '32px',
                 display: 'flex',
                 flexDirection: 'column',
                 alignItems: 'center',
                 gap: '8px',
-                boxShadow: '0 0 40px rgba(255,208,27,0.2)',
+                boxShadow: isTie ? '0 0 40px rgba(144,171,255,0.2)' : '0 0 40px rgba(255,208,27,0.2)',
                 animation: 'bounceIn 0.6s ease both',
               }}
             >
-              <span className="material-symbols-outlined" style={{ fontSize: '2rem', color: 'var(--tertiary)', fontVariationSettings: "'FILL' 1" }}>
-                workspace_premium
+              <span className="material-symbols-outlined" style={{ fontSize: '2rem', color: isTie ? 'var(--primary)' : 'var(--tertiary)', fontVariationSettings: "'FILL' 1" }}>
+                {isTie ? 'groups' : 'workspace_premium'}
               </span>
-              <span style={{ fontSize: '0.7rem', fontWeight: 700, color: 'var(--tertiary)', textTransform: 'uppercase', letterSpacing: '0.2em' }}>
-                {winner.name}
+              <span style={{ fontSize: '0.7rem', fontWeight: 700, color: isTie ? 'var(--primary)' : 'var(--tertiary)', textTransform: 'uppercase', letterSpacing: '0.2em' }}>
+                {isTie ? teams[0].name : winner.name}
               </span>
               <span
                 className="font-headline"
-                style={{ fontSize: '4rem', fontWeight: 900, color: 'var(--tertiary)', lineHeight: 1, filter: 'drop-shadow(0 0 15px rgba(255,224,131,0.6))' }}
+                style={{ fontSize: '4rem', fontWeight: 900, color: isTie ? 'var(--primary)' : 'var(--tertiary)', lineHeight: 1, filter: isTie ? 'none' : 'drop-shadow(0 0 15px rgba(255,224,131,0.6))' }}
               >
-                {winnerScore}
+                {isTie ? scores[0] : winnerScore}
               </span>
-              <span style={{ fontSize: '0.75rem', color: 'rgba(255,224,131,0.6)', fontWeight: 600 }}>puntos</span>
+              <span style={{ fontSize: '0.75rem', color: isTie ? 'rgba(144,171,255,0.6)' : 'rgba(255,224,131,0.6)', fontWeight: 600 }}>puntos</span>
             </div>
 
-            {/* Loser Score */}
+            {/* Loser Score or Team B */}
             <div
               style={{
-                background: 'rgba(33,0,86,0.5)',
-                border: '2px solid var(--outline-variant)',
+                background: isTie ? 'linear-gradient(135deg, rgba(255,224,131,0.2), rgba(255,143,6,0.15))' : 'rgba(33,0,86,0.5)',
+                border: isTie ? '2px solid var(--secondary)' : '2px solid var(--outline-variant)',
                 borderRadius: '24px',
                 padding: '32px',
                 display: 'flex',
                 flexDirection: 'column',
                 alignItems: 'center',
                 gap: '8px',
-                opacity: 0.8,
+                opacity: isTie ? 1 : 0.8,
+                boxShadow: isTie ? '0 0 40px rgba(255,143,6,0.2)' : 'none',
                 animation: 'bounceIn 0.6s ease 0.2s both',
               }}
             >
-              <span className="material-symbols-outlined" style={{ fontSize: '2rem', color: 'var(--on-surface-variant)', fontVariationSettings: "'FILL' 1" }}>
+              <span className="material-symbols-outlined" style={{ fontSize: '2rem', color: isTie ? 'var(--secondary)' : 'var(--on-surface-variant)', fontVariationSettings: "'FILL' 1" }}>
                 groups
               </span>
-              <span style={{ fontSize: '0.7rem', fontWeight: 700, color: 'var(--on-surface-variant)', textTransform: 'uppercase', letterSpacing: '0.2em' }}>
-                {loser.name}
+              <span style={{ fontSize: '0.7rem', fontWeight: 700, color: isTie ? 'var(--secondary)' : 'var(--on-surface-variant)', textTransform: 'uppercase', letterSpacing: '0.2em' }}>
+                {isTie ? teams[1].name : loser.name}
               </span>
               <span
                 className="font-headline"
-                style={{ fontSize: '4rem', fontWeight: 900, color: 'var(--on-surface-variant)', lineHeight: 1 }}
+                style={{ fontSize: '4rem', fontWeight: 900, color: isTie ? 'var(--secondary)' : 'var(--on-surface-variant)', lineHeight: 1 }}
               >
-                {loserScore}
+                {isTie ? scores[1] : loserScore}
               </span>
-              <span style={{ fontSize: '0.75rem', color: 'rgba(183,156,245,0.4)', fontWeight: 600 }}>puntos</span>
+              <span style={{ fontSize: '0.75rem', color: isTie ? 'rgba(255,143,6,0.6)' : 'rgba(183,156,245,0.4)', fontWeight: 600 }}>puntos</span>
             </div>
           </div>
 
@@ -261,7 +263,7 @@ const WinnerPage = () => {
               justifyContent: 'center',
             }}
           >
-            {winner.players.map((player, i) => (
+            {(isTie ? [...teams[0].players, ...teams[1].players] : winner.players).map((player, i) => (
               <span
                 key={i}
                 style={{

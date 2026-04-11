@@ -928,11 +928,19 @@ const GamePage = () => {
         <button
           onClick={() => {
             if (window.confirm('¿Seguro que deseas terminar la partida anticipadamente?')) {
-               // Calculate current winner or tie
-               const winnerIdx = scores[0] >= scores[1] ? 0 : 1;
-               navigate('/winner', {
-                 state: { teams, scores, winnerIndex: winnerIdx },
-               });
+               const currentScores = scoresRef.current;
+               let winnerIdx = 0;
+               if (currentScores[0] > currentScores[1]) winnerIdx = 0;
+               else if (currentScores[1] > currentScores[0]) winnerIdx = 1;
+               else winnerIdx = -1; // Tie
+
+               const winnerData = { teams, scores: currentScores, winnerIndex: winnerIdx };
+               
+               if (socket && connectedRoom) {
+                 socket.emit('end_game_winner', { room: connectedRoom, ...winnerData });
+               }
+               
+               navigate('/winner', { state: winnerData });
             }
           }}
           style={{
