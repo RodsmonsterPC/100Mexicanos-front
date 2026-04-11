@@ -19,6 +19,7 @@ const RoomsPage = () => {
   
   const [roomCode, setRoomCode] = useState('');
   const [error, setError] = useState('');
+  const [playersCount, setPlayersCount] = useState(10); // default to 10
 
   const handleJoinOrCreate = (code = null) => {
     const finalCode = (code || roomCode).trim().toUpperCase();
@@ -39,7 +40,14 @@ const RoomsPage = () => {
 
   const handleCreateNewRoom = () => {
     const newCode = generateRoomCode();
-    handleJoinOrCreate(newCode);
+    if (socket) {
+      socket.emit('create_room', { roomCode: newCode, playersCount });
+      setConnectedRoom(newCode);
+      setError('');
+      navigate('/teams');
+    } else {
+      setError('Error de conexión. Intentando reconectar...');
+    }
   };
 
   const handleLeaveRoom = () => {
@@ -191,38 +199,83 @@ const RoomsPage = () => {
                  </button>
                </section>
 
-               {/* O Crear Mesa */}
                <div style={{ textAlign: 'center', position: 'relative' }}>
                   <div style={{ position: 'absolute', top: '50%', left: 0, right: 0, height: '1px', background: 'rgba(255,255,255,0.1)', zIndex: 0 }}></div>
                   <span style={{ position: 'relative', zIndex: 1, background: 'var(--surface)', padding: '0 16px', color: 'rgba(255,255,255,0.4)', fontWeight: 700, fontSize: '0.875rem' }}>O TAMBIÉN</span>
                </div>
 
-               <button
-                  onClick={handleCreateNewRoom}
-                  style={{
-                    width: '100%',
-                    padding: '24px',
-                    fontSize: '1.1rem',
-                    fontWeight: 800,
-                    letterSpacing: '0.05em',
-                    display: 'flex',
-                    flexDirection: 'column',
-                    justifyContent: 'center',
-                    alignItems: 'center',
-                    gap: '12px',
-                    background: 'var(--surface-container-highest)',
-                    color: 'white',
-                    border: '2px dashed rgba(99,102,241,0.4)',
-                    borderRadius: '16px',
-                    cursor: 'pointer',
-                    transition: 'all 0.2s ease'
-                  }}
-                  onMouseEnter={(e) => { e.currentTarget.style.borderColor = '#6366f1'; e.currentTarget.style.background = 'rgba(99,102,241,0.1)'; }}
-                  onMouseLeave={(e) => { e.currentTarget.style.borderColor = 'rgba(99,102,241,0.4)'; e.currentTarget.style.background = 'var(--surface-container-highest)'; }}
-                >
-                  <span className="material-symbols-outlined" style={{ fontSize: '2rem', color: '#6366f1' }}>add_circle</span>
-                  CREAR NUEVA SALA
-                </button>
+               <section
+                 className="glass-card"
+                 style={{
+                   padding: '32px',
+                   boxShadow: '0 20px 40px rgba(0,0,0,0.3)',
+                   borderBottom: `4px solid rgba(99,102,241,0.5)`,
+                   display: 'flex',
+                   flexDirection: 'column',
+                   gap: '24px',
+                 }}
+               >
+                 <div style={{ textAlign: 'center' }}>
+                   <span className="material-symbols-outlined" style={{ fontSize: '3rem', color: '#6366f1', marginBottom: '16px' }}>add_circle</span>
+                   <h2 className="font-headline" style={{ fontSize: '1.5rem', fontWeight: 800, color: 'white' }}>Crear Sala</h2>
+                 </div>
+
+                 <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
+                   <label style={{ color: 'var(--on-surface-variant)', fontWeight: 700, fontSize: '0.9rem', textAlign: 'center' }}>
+                     Número total de jugadores (pares)
+                   </label>
+                   <select
+                     value={playersCount}
+                     onChange={(e) => setPlayersCount(Number(e.target.value))}
+                     style={{
+                       width: '100%',
+                       background: 'var(--surface-container-highest)',
+                       border: '1px solid rgba(255,255,255,0.1)',
+                       borderRadius: '12px',
+                       padding: '16px',
+                       fontSize: '1.1rem',
+                       fontWeight: 700,
+                       color: 'white',
+                       outline: 'none',
+                       fontFamily: 'Be Vietnam Pro',
+                       textAlign: 'center',
+                       cursor: 'pointer'
+                     }}
+                   >
+                     <option value={2}>2 Jugadores (1v1)</option>
+                     <option value={4}>4 Jugadores (2v2)</option>
+                     <option value={6}>6 Jugadores (3v3)</option>
+                     <option value={8}>8 Jugadores (4v4)</option>
+                     <option value={10}>10 Jugadores (5v5)</option>
+                   </select>
+                 </div>
+
+                 <button
+                    onClick={handleCreateNewRoom}
+                    style={{
+                      width: '100%',
+                      padding: '24px',
+                      fontSize: '1.1rem',
+                      fontWeight: 800,
+                      letterSpacing: '0.05em',
+                      display: 'flex',
+                      flexDirection: 'column',
+                      justifyContent: 'center',
+                      alignItems: 'center',
+                      gap: '12px',
+                      background: 'var(--surface-container-highest)',
+                      color: 'white',
+                      border: '2px dashed rgba(99,102,241,0.4)',
+                      borderRadius: '16px',
+                      cursor: 'pointer',
+                      transition: 'all 0.2s ease'
+                    }}
+                    onMouseEnter={(e) => { e.currentTarget.style.borderColor = '#6366f1'; e.currentTarget.style.background = 'rgba(99,102,241,0.1)'; }}
+                    onMouseLeave={(e) => { e.currentTarget.style.borderColor = 'rgba(99,102,241,0.4)'; e.currentTarget.style.background = 'var(--surface-container-highest)'; }}
+                  >
+                    CREAR NUEVA SALA
+                  </button>
+               </section>
              </div>
           ) : (
              <section

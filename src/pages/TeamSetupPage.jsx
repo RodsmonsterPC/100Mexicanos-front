@@ -212,7 +212,7 @@ const TeamCard = ({ equipo, color, borderColor, teamData, onNameChange, onPlayer
           color: 'var(--on-surface-variant)',
         }}
       >
-        Integrantes (5)
+        Integrantes ({teamData.players.length})
       </label>
       <div style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
         {teamData.players.map((player, index) => {
@@ -598,7 +598,7 @@ const TeamSetupPage = () => {
     const allPlayersA = teamA.players.every((p) => p.trim());
     const allPlayersB = teamB.players.every((p) => p.trim());
     if (!allPlayersA || !allPlayersB) {
-      setError('Por favor, ingresa el nombre de todos los jugadores (5 por equipo).');
+      setError('Por favor, ingresa el nombre de todos los jugadores para ambos equipos.');
       return;
     }
     
