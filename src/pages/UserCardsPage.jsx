@@ -44,6 +44,13 @@ const UserCardsPage = () => {
       const data = await res.json();
       if (res.ok) {
         setCategories(data);
+        setSelectedCategory(prev => {
+          if (prev) {
+            const updated = data.find(c => c._id === prev._id);
+            return updated || prev;
+          }
+          return prev;
+        });
       }
     } catch (err) {
       console.error(err);
