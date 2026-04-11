@@ -341,7 +341,7 @@ const UserCardsPage = () => {
 
                        {/* Action Buttons Below */}
                        <div style={{ display: 'flex', gap: '12px', justifyContent: 'center', marginTop: 'auto', paddingTop: '12px' }}>
-                          <button onClick={() => openCardModal(c)} style={{ background: 'var(--tertiary-container, rgba(255, 255, 255, 0.1))', border: '1px solid var(--tertiary, #fde047)', color: 'var(--tertiary, #fde047)', cursor: 'pointer', padding: '12px', borderRadius: '50%', display: 'flex', alignItems: 'center', justifyContent: 'center', transition: 'all 0.2s', width: '45px', height: '45px' }} title="Editar">
+                          <button onClick={() => openCardModal(c)} style={{ background: 'rgba(253, 224, 71, 0.1)', border: '1px solid var(--tertiary, #fde047)', color: 'var(--tertiary, #fde047)', cursor: 'pointer', padding: '12px', borderRadius: '50%', display: 'flex', alignItems: 'center', justifyContent: 'center', transition: 'all 0.2s', width: '45px', height: '45px' }} title="Editar">
                              <span className="material-symbols-outlined" style={{ fontSize: '1.25rem' }}>edit</span>
                           </button>
                           <button onClick={() => handleDeleteCard(c._id)} style={{ background: 'rgba(239, 68, 68, 0.1)', border: '1px solid #ef4444', color: '#ef4444', cursor: 'pointer', padding: '12px', borderRadius: '50%', display: 'flex', alignItems: 'center', justifyContent: 'center', transition: 'all 0.2s', width: '45px', height: '45px' }} title="Eliminar">
