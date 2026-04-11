@@ -20,7 +20,7 @@ const UserCardsPage = () => {
   const [editingCard, setEditingCard] = useState(null);
   const [questionText, setQuestionText] = useState('');
   const [currentPage, setCurrentPage] = useState(1);
-  const cardsPerPage = 5;
+  const [cardsPerPage, setCardsPerPage] = useState(window.innerWidth > 768 ? 10 : 5);
   const [answers, setAnswers] = useState([
     { text: '', points: '' },
     { text: '', points: '' },
@@ -37,6 +37,17 @@ const UserCardsPage = () => {
       fetchCategories();
     }
   }, [token, navigate]);
+
+  useEffect(() => {
+    const handleResize = () => {
+      setCardsPerPage(window.innerWidth > 768 ? 10 : 5);
+      // Optional: reset page to 1 if we change perPage to avoid out of bounds,
+      // but simpler is just let the handlePageChange or bound checks handle it.
+      // We will just do a simple reset here if needed, but it's fine as is.
+    };
+    window.addEventListener('resize', handleResize);
+    return () => window.removeEventListener('resize', handleResize);
+  }, []);
 
   const fetchCategories = async () => {
     try {
