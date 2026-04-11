@@ -72,6 +72,7 @@
 
 html {
   scroll-behavior: smooth;
+  overflow-x: hidden;
 }
 
 body {
@@ -81,12 +82,15 @@ body {
   min-height: 100vh;
   overflow-x: hidden;
   -webkit-font-smoothing: antialiased;
+  width: 100%;
 }
 
 #root {
   min-height: 100vh;
   display: flex;
   flex-direction: column;
+  overflow-x: hidden;
+  width: 100%;
 }
 
 /* ========== TYPOGRAPHY ========== */
@@ -141,10 +145,25 @@ body {
   max-width: 900px;
 }
 
+.home-main-container {
+  position: relative;
+  z-index: 10;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  min-height: 100vh;
+  padding: 120px 40px 40px;
+}
+
 @media (max-width: 768px) {
   .home-bento-grid {
     display: flex;
     flex-direction: column;
+  }
+  
+  .home-main-container {
+    padding: 100px 20px 20px;
   }
 }
 
@@ -775,7 +794,8 @@ body {
     padding: 16px 20px;
   }
 
-  .desktop-nav {
+  .desktop-nav,
+  .desktop-only {
     display: none !important;
   }
 

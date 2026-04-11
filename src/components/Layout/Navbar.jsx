@@ -30,18 +30,7 @@ const Navbar = () => {
     { icon: 'group', label: 'Salas', path: '/rooms' },
   ];
 
-  return (
-    <>
-    <nav className="topnav">
-      {/* Mobile Hamburger Button */}
-      <button 
-        className="hamburger-btn" 
-        onClick={() => setIsMobileMenuOpen(true)}
-      >
-        <span className="material-symbols-outlined" style={{ fontSize: '2rem' }}>menu</span>
-      </button>
-
-      {/* Logo */}
+  const renderLogo = () => (
       <div
         className="font-headline"
         style={{
@@ -55,9 +44,54 @@ const Navbar = () => {
       >
         100 MEXICANOS DIJERON
       </div>
+  );
+
+  const renderUserActions = () => (
+     <div style={{ display: 'flex', alignItems: 'center', gap: '16px' }}>
+         {user ? (
+            <Link to="/profile" style={{ textDecoration: 'none' }} onClick={() => setIsMobileMenuOpen(false)}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: '12px', background: 'rgba(255,255,255,0.05)', padding: '6px 16px', borderRadius: '24px', transition: 'background 0.2s' }}>
+                <span style={{ color: 'white', fontWeight: 600 }}>{user.username}</span>
+                <div style={{ width: '40px', height: '40px', borderRadius: '50%', background: user.avatarColor || '#6366f1', display: 'flex', alignItems: 'center', justifyContent: 'center', boxShadow: '0 0 15px rgba(99,102,241,0.5)', color: 'white', fontWeight: 'bold' }}>
+                    {user.username.charAt(0).toUpperCase()}
+                </div>
+              </div>
+            </Link>
+        ) : (
+            <div style={{ display: 'flex', alignItems: 'center', gap: '16px', flexWrap: 'wrap' }}>
+               <Link to="/register" style={{ textDecoration: 'none' }} onClick={() => setIsMobileMenuOpen(false)}>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '8px', padding: '8px 16px', color: 'rgba(255,255,255,0.8)', fontWeight: 700, transition: 'color 0.2s' }}>
+                     Registrarse
+                  </div>
+               </Link>
+               <Link to="/login" style={{ textDecoration: 'none' }} onClick={() => setIsMobileMenuOpen(false)}>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '8px', background: 'var(--primary)', padding: '8px 20px', borderRadius: '24px', color: 'white', fontWeight: 700, boxShadow: '0 4px 15px rgba(0,0,0,0.3)' }}>
+                     Inicia Sesión <span className="material-symbols-outlined" style={{fontSize: '1.2rem'}}>login</span>
+                  </div>
+               </Link>
+            </div>
+        )}
+      </div>
+  );
+
+  return (
+    <>
+    <nav className="topnav">
+      {/* Mobile Hamburger Button */}
+      <button 
+        className="hamburger-btn" 
+        onClick={() => setIsMobileMenuOpen(true)}
+      >
+        <span className="material-symbols-outlined" style={{ fontSize: '2rem' }}>menu</span>
+      </button>
+
+      {/* Logo */}
+      <div className="desktop-only">
+        {renderLogo()}
+      </div>
 
       {/* Desktop Nav Links */}
-      <div style={{ display: 'flex', gap: '32px', alignItems: 'center' }} className="desktop-nav">
+      <div style={{ display: 'flex', gap: '32px', alignItems: 'center' }} className="desktop-nav desktop-only">
         <Link to="/" className="font-headline" style={getLinkStyle('/')}>
           Tablero
         </Link>
@@ -70,30 +104,8 @@ const Navbar = () => {
       </div>
 
       {/* Right Actions */}
-      <div style={{ display: 'flex', alignItems: 'center', gap: '16px' }}>
-         {user ? (
-            <Link to="/profile" style={{ textDecoration: 'none' }}>
-              <div style={{ display: 'flex', alignItems: 'center', gap: '12px', background: 'rgba(255,255,255,0.05)', padding: '6px 16px', borderRadius: '24px', transition: 'background 0.2s' }}>
-                <span style={{ color: 'white', fontWeight: 600 }}>{user.username}</span>
-                <div style={{ width: '40px', height: '40px', borderRadius: '50%', background: user.avatarColor || '#6366f1', display: 'flex', alignItems: 'center', justifyContent: 'center', boxShadow: '0 0 15px rgba(99,102,241,0.5)', color: 'white', fontWeight: 'bold' }}>
-                    {user.username.charAt(0).toUpperCase()}
-                </div>
-              </div>
-            </Link>
-        ) : (
-            <>
-               <Link to="/register" style={{ textDecoration: 'none' }}>
-                  <div style={{ display: 'flex', alignItems: 'center', gap: '8px', padding: '8px 16px', color: 'rgba(255,255,255,0.8)', fontWeight: 700, transition: 'color 0.2s' }}>
-                     Registrarse
-                  </div>
-               </Link>
-               <Link to="/login" style={{ textDecoration: 'none' }}>
-                  <div style={{ display: 'flex', alignItems: 'center', gap: '8px', background: 'var(--primary)', padding: '8px 20px', borderRadius: '24px', color: 'white', fontWeight: 700, boxShadow: '0 4px 15px rgba(0,0,0,0.3)' }}>
-                     Inicia Sesión <span className="material-symbols-outlined" style={{fontSize: '1.2rem'}}>login</span>
-                  </div>
-               </Link>
-            </>
-        )}
+      <div className="desktop-only">
+        {renderUserActions()}
       </div>
     </nav>
 
@@ -107,8 +119,16 @@ const Navbar = () => {
       </button>
 
       <div style={{ padding: '24px 0', display: 'flex', flexDirection: 'column', gap: '24px', flex: 1, overflowY: 'auto' }}>
+        {/* User Account */}
+        <div style={{ marginBottom: '16px' }}>
+          {renderUserActions()}
+        </div>
+
         {/* Title */}
         <div style={{ marginBottom: '20px' }}>
+          <div style={{ marginBottom: '12px' }}>
+            {renderLogo()}
+          </div>
           <div style={{ display: 'flex', alignItems: 'center', gap: '10px', marginBottom: '4px' }}>
             <span className="material-symbols-outlined" style={{ color: '#93c5fd' }}>lightbulb</span>
             <span className="font-headline" style={{ fontSize: '1.1rem', fontWeight: 900, color: '#93c5fd', textTransform: 'uppercase' }}>Control Central</span>

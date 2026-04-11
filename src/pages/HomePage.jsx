@@ -95,18 +95,7 @@ const HomePage = () => {
         ))}
 
         {/* Main Content */}
-        <main
-          style={{
-            position: 'relative',
-            zIndex: 10,
-            display: 'flex',
-            flexDirection: 'column',
-            alignItems: 'center',
-            justifyContent: 'center',
-            minHeight: '100vh',
-            padding: '120px 40px 40px',
-          }}
-        >
+        <main className="home-main-container">
           {/* Hero Section */}
           <section style={{ textAlign: 'center', maxWidth: '900px', width: '100%' }}>
             <div style={{ marginBottom: '12px' }}>
