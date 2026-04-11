@@ -112,6 +112,9 @@ const GamePage = () => {
   const currentUserIdentifier = user?.username || sessionStorage.getItem('guestUsername');
   // For "roundOver" phase: reveal all answers before loading next question
   const [roundOverRevealed, setRoundOverRevealed] = useState([]);
+  const [playedQuestionIds, setPlayedQuestionIds] = useState([]);
+  const playedQuestionIdsRef = useRef([]);
+  useEffect(() => { playedQuestionIdsRef.current = playedQuestionIds; }, [playedQuestionIds]);
 
   // Use a ref for scores so timer callbacks always have fresh value
   const scoresRef = useRef([0, 0]);
@@ -143,6 +146,7 @@ const GamePage = () => {
       }
       if (u.feedback) showFeedback(u.feedback.type, u.feedback.message);
       if (u.winnerOnDeck !== undefined) setWinnerOnDeck(u.winnerOnDeck);
+      if (u.playedQuestionIds !== undefined) setPlayedQuestionIds(u.playedQuestionIds);
       
       // Sync timer strictly via flag
       if (u.isTimerRunning !== undefined) {
@@ -219,8 +223,18 @@ const GamePage = () => {
     try {
       let q = useQ;
       if (!q) {
-        const res = await getRandomQuestion(categories);
+        const res = await getRandomQuestion(categories, playedQuestionIdsRef.current);
         q = res.data;
+        let nextPlayed = [...playedQuestionIdsRef.current, q._id];
+        if (res.resetExclude) nextPlayed = [q._id];
+        setPlayedQuestionIds(nextPlayed);
+        broadcastState({ playedQuestionIds: nextPlayed });
+      } else {
+        // Initial question passed from TeamSetupPage
+        if (playedQuestionIdsRef.current.length === 0) {
+            setPlayedQuestionIds([q._id]);
+            broadcastState({ playedQuestionIds: [q._id] });
+        }
       }
       setQuestion(q);
       setRevealedAnswers(q.answers.map(() => false));
@@ -334,8 +348,13 @@ const GamePage = () => {
       navigate('/winner', { state: winnerData });
     } else {
       try {
-        const res = await getRandomQuestion(categories);
+        const res = await getRandomQuestion(categories, playedQuestionIdsRef.current);
+        let nextPlayed = [...playedQuestionIdsRef.current, res.data._id];
+        if (res.resetExclude) nextPlayed = [res.data._id];
+        setPlayedQuestionIds(nextPlayed);
+
         if (socket && connectedRoom) socket.emit('next_question', { room: connectedRoom, question: res.data });
+        broadcastState({ playedQuestionIds: nextPlayed });
         loadQuestion(scoresRef.current, res.data);
       } catch (err) {
         console.error(err);

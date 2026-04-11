@@ -1,19 +1,25 @@
 const API_BASE = import.meta.env.VITE_API_URL ? `${import.meta.env.VITE_API_URL}/api` : 'https://one00mexicanos-back.onrender.com/api';
 
-export const getRandomQuestion = async (categories = []) => {
+export const getRandomQuestion = async (categories = [], exclude = []) => {
   let url = `${API_BASE}/questions/random`;
+  const params = new URLSearchParams();
+
   if (categories && categories.length > 0) {
     const globalCats = categories.filter(c => !c.startsWith('USR:'));
     const userCats = categories.filter(c => c.startsWith('USR:')).map(c => c.replace('USR:', ''));
     
-    const params = new URLSearchParams();
     if (globalCats.length > 0) params.append('categories', globalCats.join(','));
     if (userCats.length > 0) params.append('userCategories', userCats.join(','));
-    
-    if (params.toString()) {
-      url += `?${params.toString()}`;
-    }
   }
+
+  if (exclude && exclude.length > 0) {
+    params.append('exclude', exclude.join(','));
+  }
+
+  if (params.toString()) {
+    url += `?${params.toString()}`;
+  }
+
   const response = await fetch(url);
   if (!response.ok) {
     throw new Error('Error al obtener pregunta aleatoria');
