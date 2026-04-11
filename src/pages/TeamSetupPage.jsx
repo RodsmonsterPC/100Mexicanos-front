@@ -290,7 +290,7 @@ const RemoteCursor = ({ x, y, color, username }) => (
 const TeamSetupPage = () => {
   const navigate = useNavigate();
   const { socket, connectedRoom } = useSocketContext();
-  const { user } = useAuthContext();
+  const { user, token } = useAuthContext();
 
   const [teamA, setTeamA] = useState({ name: '', players: ['', '', '', '', ''] });
   const [teamB, setTeamB] = useState({ name: '', players: ['', '', '', '', ''] });
@@ -318,9 +318,9 @@ const TeamSetupPage = () => {
           allCategories = [...res.data];
         }
 
-        if (user && user.token) {
+        if (user && token) {
            const uRes = await fetch(`${import.meta.env.VITE_API_URL || 'https://one00mexicanos-back.onrender.com'}/api/user-categories`, {
-               headers: { 'Authorization': `Bearer ${user.token}` }
+               headers: { 'Authorization': `Bearer ${token}` }
            });
            if (uRes.ok) {
                const uData = await uRes.json();
