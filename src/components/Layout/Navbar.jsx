@@ -1,9 +1,14 @@
-import { Link, useLocation } from 'react-router-dom';
+import { Link, useLocation, useNavigate } from 'react-router-dom';
 import { useAuthContext } from '../../contexts/AuthContext';
+import { useSocketContext } from '../../contexts/SocketContext';
+import { useState } from 'react';
 
 const Navbar = () => {
   const { pathname } = useLocation();
+  const navigate = useNavigate();
   const { user } = useAuthContext();
+  const { connectedRoom } = useSocketContext();
+  const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
 
   const getLinkStyle = (path) => {
     const isActive = pathname === path;
@@ -19,8 +24,23 @@ const Navbar = () => {
     };
   };
 
+  const navItems = [
+    { icon: 'home', label: 'Inicio', path: '/' },
+    { icon: 'sports_esports', label: 'Partida', path: '/teams' },
+    { icon: 'group', label: 'Salas', path: '/rooms' },
+  ];
+
   return (
+    <>
     <nav className="topnav">
+      {/* Mobile Hamburger Button */}
+      <button 
+        className="hamburger-btn" 
+        onClick={() => setIsMobileMenuOpen(true)}
+      >
+        <span className="material-symbols-outlined" style={{ fontSize: '2rem' }}>menu</span>
+      </button>
+
       {/* Logo */}
       <div
         className="font-headline"
@@ -76,6 +96,71 @@ const Navbar = () => {
         )}
       </div>
     </nav>
+
+    {/* Mobile Menu Overlay */}
+    <div className={`mobile-menu-overlay ${isMobileMenuOpen ? 'open' : ''}`}>
+      <button 
+        className="mobile-menu-close"
+        onClick={() => setIsMobileMenuOpen(false)}
+      >
+        <span className="material-symbols-outlined" style={{ fontSize: '2rem' }}>close</span>
+      </button>
+
+      <div style={{ padding: '24px 0', display: 'flex', flexDirection: 'column', gap: '24px', flex: 1, overflowY: 'auto' }}>
+        {/* Title */}
+        <div style={{ marginBottom: '20px' }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: '10px', marginBottom: '4px' }}>
+            <span className="material-symbols-outlined" style={{ color: '#93c5fd' }}>lightbulb</span>
+            <span className="font-headline" style={{ fontSize: '1.1rem', fontWeight: 900, color: '#93c5fd', textTransform: 'uppercase' }}>Control Central</span>
+          </div>
+          <p style={{ fontSize: '0.65rem', color: 'rgba(147, 197, 253, 0.4)', textTransform: 'uppercase', letterSpacing: '0.1em', fontWeight: 700 }}>Estudio 5</p>
+        </div>
+
+        {/* Sidebar Nav Items */}
+        <nav style={{ display: 'flex', flexDirection: 'column', gap: '4px', marginBottom: '24px' }}>
+          {navItems.map((item) => (
+            <Link
+              key={item.label}
+              to={item.path}
+              className={`sidebar-nav-item ${pathname === item.path ? 'active' : ''}`}
+              style={{ textDecoration: 'none', marginLeft: 0 }}
+              onClick={() => setIsMobileMenuOpen(false)}
+            >
+              <span className="material-symbols-outlined" style={pathname === item.path ? { fontVariationSettings: "'FILL' 1" } : {}}>{item.icon}</span>
+              <span>{item.label}</span>
+            </Link>
+          ))}
+        </nav>
+
+        {/* Additional Navbar Links (that disappear on mobile) */}
+        <div style={{ borderTop: '1px solid rgba(255,255,255,0.1)', paddingTop: '24px', display: 'flex', flexDirection: 'column', gap: '16px' }}>
+          <Link to="/" className="font-headline" style={getLinkStyle('/')} onClick={() => setIsMobileMenuOpen(false)}>Tablero</Link>
+          <Link to="/teams" className="font-headline" style={getLinkStyle('/teams')} onClick={() => setIsMobileMenuOpen(false)}>Equipos</Link>
+          <Link to="/rules" className="font-headline" style={getLinkStyle('/rules')} onClick={() => setIsMobileMenuOpen(false)}>Reglas</Link>
+        </div>
+      </div>
+
+      {/* CTA Buttons */}
+      <div style={{ marginTop: 'auto', display: 'flex', flexDirection: 'column', gap: '8px', paddingBottom: '20px' }}>
+        {connectedRoom && !pathname.includes('game') && (
+           <button
+             className="btn-primary"
+             style={{ width: '100%', padding: '16px', fontSize: '0.875rem', letterSpacing: '0.05em', background: 'var(--tertiary)', color: 'var(--on-tertiary)' }}
+             onClick={() => { setIsMobileMenuOpen(false); navigate('/game'); }}
+           >
+             VOLVER A PARTIDA
+           </button>
+        )}
+        <button
+          className="btn-secondary"
+          style={{ width: '100%', padding: '16px', fontSize: '0.875rem', letterSpacing: '0.05em' }}
+          onClick={() => { setIsMobileMenuOpen(false); navigate('/'); }}
+        >
+          NUEVA PARTIDA
+        </button>
+      </div>
+    </div>
+    </>
   );
 };
 

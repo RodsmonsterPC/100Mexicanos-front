@@ -164,16 +164,7 @@ const HomePage = () => {
           </section>
 
           {/* Bento Grid */}
-          <section
-            style={{
-              marginTop: '64px',
-              display: 'grid',
-              gridTemplateColumns: 'repeat(3, 1fr)',
-              gap: '24px',
-              width: '100%',
-              maxWidth: '900px',
-            }}
-          >
+          <section className="home-bento-grid">
             {/* Large card - Teams */}
             <div
               className="glass-card"

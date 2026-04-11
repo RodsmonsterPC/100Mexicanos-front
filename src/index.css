@@ -132,6 +132,22 @@ body {
   }
 }
 
+.home-bento-grid {
+  margin-top: 64px;
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 24px;
+  width: 100%;
+  max-width: 900px;
+}
+
+@media (max-width: 768px) {
+  .home-bento-grid {
+    display: flex;
+    flex-direction: column;
+  }
+}
+
 /* ========== SIDEBAR ========== */
 .sidebar {
   position: fixed;
@@ -191,6 +207,43 @@ body {
   align-items: center;
   padding: 20px 40px;
   background: linear-gradient(to bottom, rgba(0, 0, 0, 0.6), transparent);
+}
+
+.hamburger-btn {
+  display: none;
+  background: none;
+  border: none;
+  color: white;
+  cursor: pointer;
+  align-items: center;
+  justify-content: center;
+}
+
+/* Base states for mobile menu */
+.mobile-menu-overlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(0,0,0,0.8);
+  backdrop-filter: blur(8px);
+  z-index: 999;
+  display: flex;
+  flex-direction: column;
+  padding: 20px;
+  transform: translateX(-100%);
+  transition: transform 0.3s ease;
+}
+
+.mobile-menu-overlay.open {
+  transform: translateX(0);
+}
+
+.mobile-menu-close {
+  align-self: flex-end;
+  background: none;
+  border: none;
+  color: white;
+  cursor: pointer;
+  padding: 10px;
 }
 
 /* ========== BUTTONS ========== */
@@ -720,6 +773,14 @@ body {
   .topnav {
     left: 0;
     padding: 16px 20px;
+  }
+
+  .desktop-nav {
+    display: none !important;
+  }
+
+  .hamburger-btn {
+    display: flex;
   }
   
   .btn-primary {
