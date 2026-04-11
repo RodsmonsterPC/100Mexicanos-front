@@ -19,6 +19,8 @@ const UserCardsPage = () => {
   const [showCardModal, setShowCardModal] = useState(false);
   const [editingCard, setEditingCard] = useState(null);
   const [questionText, setQuestionText] = useState('');
+  const [currentPage, setCurrentPage] = useState(1);
+  const cardsPerPage = 5;
   const [answers, setAnswers] = useState([
     { text: '', points: '' },
     { text: '', points: '' },
@@ -97,6 +99,7 @@ const UserCardsPage = () => {
 
   const handleSelectCategory = async (cat) => {
     setSelectedCategory(cat);
+    setCurrentPage(1);
     fetchCards(cat._id);
   };
 
@@ -185,6 +188,32 @@ const UserCardsPage = () => {
     } catch (err) {
       console.error(err);
     }
+  };
+
+  const handlePageChange = (page) => {
+    if (page >= 1 && page <= totalPages) setCurrentPage(page);
+  };
+
+  const indexOfLastCard = currentPage * cardsPerPage;
+  const indexOfFirstCard = indexOfLastCard - cardsPerPage;
+  const currentCards = cards.slice(indexOfFirstCard, indexOfLastCard);
+  const totalPages = Math.ceil(cards.length / cardsPerPage);
+
+  const PaginationControls = () => {
+    if (totalPages <= 1) return null;
+    return (
+      <div style={{ display: 'flex', justifyContent: 'center', gap: '8px', padding: '16px 0', alignItems: 'center' }}>
+         <button disabled={currentPage === 1} onClick={() => handlePageChange(currentPage - 1)} style={{ padding: '8px', borderRadius: '50%', background: 'var(--tertiary)', color: 'black', border: 'none', cursor: currentPage === 1 ? 'not-allowed' : 'pointer', display: 'flex', alignItems: 'center', opacity: currentPage === 1 ? 0.5 : 1 }}>
+            <span className="material-symbols-outlined">chevron_left</span>
+         </button>
+         <span style={{ color: 'white', fontWeight: 'bold' }}>
+            Página {currentPage} de {totalPages}
+         </span>
+         <button disabled={currentPage === totalPages} onClick={() => handlePageChange(currentPage + 1)} style={{ padding: '8px', borderRadius: '50%', background: 'var(--tertiary)', color: 'black', border: 'none', cursor: currentPage === totalPages ? 'not-allowed' : 'pointer', display: 'flex', alignItems: 'center', opacity: currentPage === totalPages ? 0.5 : 1 }}>
+            <span className="material-symbols-outlined">chevron_right</span>
+         </button>
+      </div>
+    );
   };
 
   return (
@@ -292,19 +321,13 @@ const UserCardsPage = () => {
                 )}
               </div>
 
+              {totalPages > 1 && <PaginationControls />}
+
               <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(350px, 1fr))', gap: '20px' }}>
-                 {cards.map((c, i) => (
-                    <div key={c._id} className="glass-card" style={{ padding: '24px', display: 'flex', flexDirection: 'column', gap: '16px' }}>
+                 {currentCards.map((c, i) => (
+                    <div key={c._id} className="glass-card" style={{ padding: '24px', display: 'flex', flexDirection: 'column', gap: '16px', position: 'relative' }}>
                        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
-                          <h3 style={{ fontSize: '1.2rem', color: 'var(--secondary)', margin: 0, fontWeight: 800 }}>{i + 1}. {c.question}</h3>
-                          <div style={{ display: 'flex', gap: '8px' }}>
-                             <button onClick={() => openCardModal(c)} style={{ background: 'transparent', border: 'none', color: 'var(--on-surface)', cursor: 'pointer' }}>
-                                <span className="material-symbols-outlined">edit</span>
-                             </button>
-                             <button onClick={() => handleDeleteCard(c._id)} style={{ background: 'transparent', border: 'none', color: 'var(--error)', cursor: 'pointer' }}>
-                                <span className="material-symbols-outlined">delete</span>
-                             </button>
-                          </div>
+                          <h3 style={{ fontSize: '1.2rem', color: 'var(--secondary)', margin: 0, fontWeight: 800 }}>{(indexOfFirstCard + i) + 1}. {c.question}</h3>
                        </div>
                        
                        <div style={{ display: 'grid', gridTemplateColumns: '1fr', gap: '8px', background: 'rgba(0,0,0,0.2)', padding: '16px', borderRadius: '8px' }}>
@@ -315,10 +338,22 @@ const UserCardsPage = () => {
                              </div>
                           ))}
                        </div>
+
+                       {/* Action Buttons Below */}
+                       <div style={{ display: 'flex', gap: '12px', justifyContent: 'center', marginTop: 'auto', paddingTop: '12px' }}>
+                          <button onClick={() => openCardModal(c)} style={{ background: 'var(--tertiary-container, rgba(255, 255, 255, 0.1))', border: '1px solid var(--tertiary, #fde047)', color: 'var(--tertiary, #fde047)', cursor: 'pointer', padding: '12px', borderRadius: '50%', display: 'flex', alignItems: 'center', justifyContent: 'center', transition: 'all 0.2s', width: '45px', height: '45px' }} title="Editar">
+                             <span className="material-symbols-outlined" style={{ fontSize: '1.25rem' }}>edit</span>
+                          </button>
+                          <button onClick={() => handleDeleteCard(c._id)} style={{ background: 'rgba(239, 68, 68, 0.1)', border: '1px solid #ef4444', color: '#ef4444', cursor: 'pointer', padding: '12px', borderRadius: '50%', display: 'flex', alignItems: 'center', justifyContent: 'center', transition: 'all 0.2s', width: '45px', height: '45px' }} title="Eliminar">
+                             <span className="material-symbols-outlined" style={{ fontSize: '1.25rem' }}>delete</span>
+                          </button>
+                       </div>
                     </div>
                  ))}
                  {cards.length === 0 && <p style={{ color: 'var(--on-surface-variant)', textAlign: 'center', gridColumn: '1 / -1' }}>No hay tarjetas en este mazo.</p>}
               </div>
+
+              {totalPages > 1 && <PaginationControls />}
             </section>
           )}
         </main>
