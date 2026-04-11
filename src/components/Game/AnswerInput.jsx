@@ -20,7 +20,7 @@ const AnswerInput = ({ value, onChange, onSubmit, disabled, currentTeam, current
     <div
       style={{
         background: 'var(--surface-container-high)',
-        padding: '24px 32px',
+        padding: 'clamp(16px, 4vw, 24px) clamp(16px, 4vw, 32px)',
         borderRadius: '24px',
         boxShadow: '0 20px 40px rgba(0,0,0,0.3)',
         borderTop: '2px solid rgba(255,255,255,0.05)',
@@ -68,7 +68,7 @@ const AnswerInput = ({ value, onChange, onSubmit, disabled, currentTeam, current
         </div>
         <button
           type="submit"
-          className="btn-secondary"
+          className="btn-secondary mobile-icon-button"
           disabled={disabled || !value.trim()}
           style={{
             padding: '20px 32px',
@@ -77,7 +77,7 @@ const AnswerInput = ({ value, onChange, onSubmit, disabled, currentTeam, current
             cursor: disabled || isLockedByOther || !value.trim() ? 'not-allowed' : 'pointer',
           }}
         >
-          ENVIAR
+          <span className="hidden-mobile">ENVIAR</span>
           <span className="material-symbols-outlined" style={{ fontSize: '1.25rem' }}>send</span>
         </button>
       </form>

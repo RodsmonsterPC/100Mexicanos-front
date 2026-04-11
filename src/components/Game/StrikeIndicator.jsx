@@ -8,25 +8,11 @@ const StrikeIndicator = ({ strikes, max = 3 }) => {
           style={{ animationDelay: `${index * 0.1}s` }}
         >
           {index < strikes ? (
-            <span
-              className="material-symbols-outlined"
-              style={{
-                fontSize: '2.5rem',
-                color: 'var(--error)',
-                fontVariationSettings: "'wght' 900",
-              }}
-            >
+            <span className="material-symbols-outlined strike-icon-active">
               close
             </span>
           ) : (
-            <span
-              style={{
-                fontSize: '2rem',
-                fontWeight: 900,
-                color: 'rgba(81, 56, 137, 0.2)',
-                fontFamily: 'Plus Jakarta Sans',
-              }}
-            >
+            <span className="strike-icon-inactive">
               X
             </span>
           )}

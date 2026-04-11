@@ -130,7 +130,7 @@ const TeamCard = ({ equipo, color, borderColor, teamData, onNameChange, onPlayer
   <section
     className="glass-card"
     style={{
-      padding: '32px',
+      padding: 'clamp(20px, 4vw, 32px)',
       boxShadow: '0 20px 40px rgba(0,0,0,0.3)',
       borderBottom: `4px solid ${borderColor}`,
       display: 'flex',
@@ -671,10 +671,11 @@ const TeamSetupPage = () => {
             zIndex: 10,
             paddingTop: '120px',
             paddingBottom: '80px',
-            paddingLeft: '48px',
-            paddingRight: '48px',
+            paddingLeft: 'clamp(16px, 5vw, 48px)',
+            paddingRight: 'clamp(16px, 5vw, 48px)',
             maxWidth: '1400px',
             margin: '0 auto',
+            width: '100%',
           }}
         >
           {/* Header */}
@@ -721,11 +722,103 @@ const TeamSetupPage = () => {
             </div>
           )}
 
+          {/* Category Selection */}
+          <section style={{ marginBottom: '32px', width: '100%', display: 'flex', flexDirection: 'column', alignItems: 'center' }}>
+            <h2 className="font-headline" style={{ color: 'white', marginBottom: '8px', fontSize: '1.5rem', fontWeight: 800 }}>Mazo de Preguntas</h2>
+            <p style={{ color: 'var(--on-surface-variant)', marginBottom: '24px', fontSize: '0.9rem', textAlign: 'center' }}>Selecciona qué categorías de preguntas deseas jugar en esta partida:</p>
+            
+            {availableCategories.length === 0 ? (
+               <div style={{ color: 'var(--primary)' }}>Cargando categorías...</div>
+            ) : (
+               <div style={{ display: 'flex', flexWrap: 'wrap', gap: '8px', justifyContent: 'center', maxWidth: '800px' }}>
+                 {availableCategories.map(cat => {
+                   const isSelected = selectedCategories.includes(cat);
+                   return (
+                     <button
+                       key={cat}
+                       onClick={() => toggleCategory(cat)}
+                       style={{
+                         background: isSelected ? 'var(--primary)' : 'rgba(255,255,255,0.05)',
+                         color: isSelected ? 'black' : 'white',
+                         border: `1px solid ${isSelected ? 'var(--primary)' : 'rgba(255,255,255,0.2)'}`,
+                         padding: '8px 16px',
+                         borderRadius: '30px',
+                         fontWeight: 700,
+                         cursor: 'pointer',
+                         transition: 'all 0.2s',
+                         display: 'flex',
+                         alignItems: 'center',
+                         gap: '6px',
+                         fontSize: '0.85rem',
+                         boxShadow: isSelected ? '0 0 15px rgba(144,171,255,0.4)' : 'none'
+                       }}
+                     >
+                       {isSelected ? <span className="material-symbols-outlined" style={{ fontSize: '1rem', fontVariationSettings: "'FILL' 1" }}>check_circle</span> : null}
+                       {cat}
+                     </button>
+                   );
+                 })}
+               </div>
+            )}
+          </section>
+
+          {/* Footer CTA */}
+          <div style={{ display: 'flex', justifyContent: 'center', marginBottom: '48px' }}>
+            <button
+              onClick={handleStart}
+              style={{
+                position: 'relative',
+                background: 'none',
+                border: 'none',
+                cursor: 'pointer',
+                padding: '4px',
+                borderRadius: '20px',
+              }}
+            >
+              {/* Glow border */}
+              <div
+                style={{
+                  position: 'absolute',
+                  inset: '-2px',
+                  background: 'linear-gradient(90deg, var(--primary), var(--secondary))',
+                  borderRadius: '16px',
+                  filter: 'blur(6px)',
+                  opacity: 0.5,
+                  transition: 'opacity 0.3s',
+                }}
+              />
+              <div
+                style={{
+                  position: 'relative',
+                  display: 'flex',
+                  alignItems: 'center',
+                  gap: '12px',
+                  background: 'linear-gradient(90deg, var(--primary), var(--primary-dim))',
+                  padding: '16px 40px',
+                  borderRadius: '14px',
+                  fontFamily: 'Plus Jakarta Sans',
+                  fontWeight: 900,
+                  fontSize: '1.2rem',
+                  textTransform: 'uppercase',
+                  letterSpacing: '-0.02em',
+                  color: 'var(--on-primary)',
+                  boxShadow: '0 10px 20px rgba(0,0,0,0.3)',
+                  transition: 'transform 0.2s, filter 0.2s',
+                }}
+                onMouseEnter={(e) => e.currentTarget.style.transform = 'scale(1.03)'}
+                onMouseLeave={(e) => e.currentTarget.style.transform = 'scale(1)'}
+              >
+                Iniciar Partida
+                <span className="material-symbols-outlined" style={{ fontSize: '1.5rem' }}>play_circle</span>
+              </div>
+            </button>
+          </div>
+
           {/* Teams Grid */}
           <div
             style={{
               display: 'grid',
-              gridTemplateColumns: 'repeat(auto-fit, minmax(400px, 1fr))',
+              gridTemplateColumns: 'repeat(auto-fit, minmax(min(100%, 320px), 1fr))',
               gap: '40px',
               width: '100%',
               position: 'relative',
@@ -802,97 +895,6 @@ const TeamSetupPage = () => {
               currentUser={user}
             />
           </div>
-
-          {/* Category Selection */}
-          <section style={{ marginTop: '56px', width: '100%', display: 'flex', flexDirection: 'column', alignItems: 'center' }}>
-            <h2 className="font-headline" style={{ color: 'white', marginBottom: '8px', fontSize: '1.5rem', fontWeight: 800 }}>Mazo de Preguntas</h2>
-            <p style={{ color: 'var(--on-surface-variant)', marginBottom: '24px', fontSize: '0.9rem' }}>Selecciona qué categorías de preguntas deseas jugar en esta partida:</p>
-            
-            {availableCategories.length === 0 ? (
-               <div style={{ color: 'var(--primary)' }}>Cargando categorías...</div>
-            ) : (
-               <div style={{ display: 'flex', flexWrap: 'wrap', gap: '12px', justifyContent: 'center', maxWidth: '800px' }}>
-                 {availableCategories.map(cat => {
-                   const isSelected = selectedCategories.includes(cat);
-                   return (
-                     <button
-                       key={cat}
-                       onClick={() => toggleCategory(cat)}
-                       style={{
-                         background: isSelected ? 'var(--primary)' : 'rgba(255,255,255,0.05)',
-                         color: isSelected ? 'black' : 'white',
-                         border: `1px solid ${isSelected ? 'var(--primary)' : 'rgba(255,255,255,0.2)'}`,
-                         padding: '10px 20px',
-                         borderRadius: '30px',
-                         fontWeight: 700,
-                         cursor: 'pointer',
-                         transition: 'all 0.2s',
-                         display: 'flex',
-                         alignItems: 'center',
-                         gap: '8px',
-                         boxShadow: isSelected ? '0 0 15px rgba(144,171,255,0.4)' : 'none'
-                       }}
-                     >
-                       {isSelected ? <span className="material-symbols-outlined" style={{ fontSize: '1.2rem', fontVariationSettings: "'FILL' 1" }}>check_circle</span> : null}
-                       {cat}
-                     </button>
-                   );
-                 })}
-               </div>
-            )}
-          </section>
-
-          {/* Footer CTA */}
-          <footer style={{ marginTop: '64px', display: 'flex', justifyContent: 'center' }}>
-            <button
-              onClick={handleStart}
-              style={{
-                position: 'relative',
-                background: 'none',
-                border: 'none',
-                cursor: 'pointer',
-                padding: '4px',
-                borderRadius: '20px',
-              }}
-            >
-              {/* Glow border */}
-              <div
-                style={{
-                  position: 'absolute',
-                  inset: '-4px',
-                  background: 'linear-gradient(90deg, var(--primary), var(--secondary))',
-                  borderRadius: '20px',
-                  filter: 'blur(8px)',
-                  opacity: 0.5,
-                  transition: 'opacity 0.3s',
-                }}
-              />
-              <div
-                style={{
-                  position: 'relative',
-                  display: 'flex',
-                  alignItems: 'center',
-                  gap: '16px',
-                  background: 'linear-gradient(90deg, var(--primary), var(--primary-dim))',
-                  padding: '24px 64px',
-                  borderRadius: '16px',
-                  fontFamily: 'Plus Jakarta Sans',
-                  fontWeight: 900,
-                  fontSize: '1.5rem',
-                  textTransform: 'uppercase',
-                  letterSpacing: '-0.02em',
-                  color: 'var(--on-primary)',
-                  boxShadow: '0 20px 40px rgba(0,0,0,0.4)',
-                  transition: 'transform 0.2s, filter 0.2s',
-                }}
-                onMouseEnter={(e) => e.currentTarget.style.transform = 'scale(1.03)'}
-                onMouseLeave={(e) => e.currentTarget.style.transform = 'scale(1)'}
-              >
-                Iniciar Partida
-                <span className="material-symbols-outlined" style={{ fontSize: '2rem' }}>play_circle</span>
-              </div>
-            </button>
-          </footer>
         </main>
       </div>
     </div>

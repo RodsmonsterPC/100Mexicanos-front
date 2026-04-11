@@ -62,9 +62,9 @@ const ProfilePage = () => {
       <Sidebar />
       <div className="main-content" style={{ minHeight: '100vh', background: 'var(--surface)', position: 'relative' }}>
         <Navbar />
-        <main style={{ paddingTop: '120px', display: 'flex', flexDirection: 'column', alignItems: 'center' }}>
-          <section className="glass-card" style={{ padding: '40px', width: '100%', maxWidth: '500px' }}>
-            <h2 className="font-headline" style={{ color: 'var(--primary)', fontWeight: 800, textAlign: 'center', marginBottom: '24px', fontSize: '2rem' }}>MI PERFIL</h2>
+        <main style={{ paddingTop: 'clamp(80px, 15vw, 120px)', paddingBottom: '40px', display: 'flex', flexDirection: 'column', alignItems: 'center' }}>
+          <section className="glass-card" style={{ padding: 'clamp(24px, 5vw, 40px)', width: '90%', maxWidth: '500px' }}>
+            <h2 className="font-headline" style={{ color: 'var(--primary)', fontWeight: 800, textAlign: 'center', marginBottom: '24px', fontSize: 'clamp(1.5rem, 5vw, 2rem)' }}>MI PERFIL</h2>
             {msg && <div style={{ color: msg.includes('Error') ? 'var(--error)' : '#10b981', marginBottom: '16px', textAlign: 'center', padding: '10px', borderRadius: '8px', background: 'rgba(255,255,255,0.05)' }}>{msg}</div>}
             
             <div style={{ display: 'flex', justifyContent: 'center', marginBottom: '24px' }}>

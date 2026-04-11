@@ -456,6 +456,13 @@ body {
   100% { transform: scale(1); opacity: 1; }
 }
 
+@keyframes bounceInCentered {
+  0% { transform: translate(-50%, -50%) scale(0.3); opacity: 0; }
+  50% { transform: translate(-50%, -50%) scale(1.1); }
+  70% { transform: translate(-50%, -50%) scale(0.9); }
+  100% { transform: translate(-50%, -50%) scale(1); opacity: 1; }
+}
+
 @keyframes slideUp {
   0% { transform: translateY(30px); opacity: 0; }
   100% { transform: translateY(0); opacity: 1; }
@@ -592,6 +599,35 @@ body {
   border-color: var(--error);
   box-shadow: 0 0 20px rgba(255, 110, 132, 0.4);
   animation: strike-appear 0.5s cubic-bezier(0.175, 0.885, 0.32, 1.275) both;
+}
+
+.strike-icon-active {
+  font-size: 2.5rem;
+  color: var(--error);
+  font-variation-settings: 'wght' 900;
+}
+
+.strike-icon-inactive {
+  font-size: 2rem;
+  font-weight: 900;
+  color: rgba(81, 56, 137, 0.2);
+  font-family: 'Plus Jakarta Sans', sans-serif;
+}
+
+.board-panel {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+/* ========== GAME BOARD ========== */
+.game-board-container {
+  width: 100%;
+  max-width: 1100px;
+  display: grid;
+  grid-template-columns: 1fr 2fr 1fr;
+  gap: 24px;
+  align-items: start;
 }
 
 /* ========== TEAM PANEL ========== */
@@ -745,9 +781,17 @@ body {
   font-family: 'Plus Jakarta Sans', sans-serif;
   font-weight: 900;
   font-size: 2rem;
-  z-index: 90;
-  animation: bounceIn 0.4s ease both;
+  z-index: 2000;
+  animation: bounceInCentered 0.4s ease both;
   pointer-events: none;
+  display: flex;
+  flex-direction: row;
+  align-items: center;
+  justify-content: center;
+  gap: 16px;
+  width: auto;
+  max-width: 90vw;
+  text-align: center;
 }
 
 .feedback-bubble.correct {
@@ -803,6 +847,70 @@ body {
     display: flex;
   }
   
+  .game-board-container {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    grid-template-areas: 
+      "teamA teamB"
+      "board board";
+    gap: 16px;
+  }
+  
+  .team-panel-a { grid-area: teamA; }
+  .team-panel-b { grid-area: teamB; }
+  .board-panel {
+    grid-area: board;
+    flex-direction: column-reverse;
+  }
+
+  .team-panel {
+    padding: 16px !important;
+  }
+
+  .strike-box {
+    width: 48px !important;
+    height: 48px !important;
+  }
+  
+  .strike-icon-active {
+    font-size: 1.75rem !important;
+  }
+  
+  .strike-icon-inactive {
+    font-size: 1.25rem !important;
+  }
+
+  .team-score-number {
+    font-size: 2rem !important;
+  }
+  
+  .team-score {
+    padding: 16px 8px !important;
+  }
+
+  .hidden-mobile {
+    display: none !important;
+  }
+
+  .mobile-icon-button {
+    padding: 12px !important;
+    border-radius: 50% !important;
+    width: 60px;
+    height: 60px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    flex-shrink: 0;
+  }
+
+  .feedback-bubble {
+    font-size: 1.5rem !important;
+    padding: 20px 24px !important;
+    white-space: normal;
+    flex-direction: column;
+    gap: 8px;
+  }
+  
   .btn-primary {
     padding: 16px 32px;
     font-size: 1rem;
@@ -818,11 +926,23 @@ body {
   }
   
   .answer-tile {
-    height: 64px;
+    min-height: 64px;
+    height: auto !important;
+    padding: 12px 16px !important;
+  }
+  
+  .answer-tile-revealed {
+    padding: 12px 16px !important;
   }
   
   .answer-tile-revealed .answer-text {
-    font-size: 0.875rem;
+    font-size: 0.85rem;
+    white-space: normal;
+  }
+  
+  .answer-tile-revealed .answer-points {
+    font-size: 1rem !important;
+    padding: 6px 12px !important;
   }
 }
 

@@ -8,7 +8,7 @@ const Timer = ({ timeLeft, isWarning }) => {
 
   return (
     <div className={`timer-circle ${isWarning ? 'timer-warning' : ''}`}>
-      <svg width="120" height="120" viewBox="0 0 128 128">
+      <svg width="100%" height="100%" viewBox="0 0 128 128" style={{ display: 'block' }}>
         {/* Background arc */}
         <circle
           cx="64"

@@ -633,12 +633,12 @@ const GamePage = () => {
 
         {/* Feedback bubble */}
         {feedback && (
-          <div className={`feedback-bubble ${feedback.type}`} style={{ zIndex: 200 }}>
+          <div className={`feedback-bubble ${feedback.type}`} style={{ zIndex: 3000 }}>
             {feedback.type === 'correct'
-              ? <span className="material-symbols-outlined" style={{ verticalAlign: 'middle', marginRight: '8px', fontVariationSettings: "'FILL' 1" }}>check_circle</span>
-              : <span className="material-symbols-outlined" style={{ verticalAlign: 'middle', marginRight: '8px', fontVariationSettings: "'FILL' 1" }}>cancel</span>
+              ? <span className="material-symbols-outlined" style={{ fontSize: '2.5rem', fontVariationSettings: "'FILL' 1" }}>check_circle</span>
+              : <span className="material-symbols-outlined" style={{ fontSize: '2.5rem', fontVariationSettings: "'FILL' 1" }}>cancel</span>
             }
-            {feedback.message}
+            <span>{feedback.message}</span>
           </div>
         )}
 
@@ -720,6 +720,7 @@ const GamePage = () => {
               display: 'flex',
               flexDirection: 'row',
               alignItems: 'center',
+              justifyContent: 'center',
               gap: '24px',
               flexWrap: 'wrap',
             }}
@@ -822,8 +823,8 @@ const GamePage = () => {
                  className="btn-primary"
                  style={{
                    width: '100%',
-                   padding: '24px',
-                   fontSize: '1.5rem',
+                   padding: 'clamp(12px, 3vw, 24px)',
+                   fontSize: 'clamp(1rem, 4vw, 1.5rem)',
                    fontWeight: 900,
                    background: 'linear-gradient(90deg, #10b981, #059669)',
                    border: 'none',
@@ -842,19 +843,10 @@ const GamePage = () => {
           </section>
 
           {/* Game Area: Teams + Board */}
-          <section
-            style={{
-              width: '100%',
-              maxWidth: '1100px',
-              display: 'grid',
-              gridTemplateColumns: '1fr 2fr 1fr',
-              gap: '24px',
-              alignItems: 'start',
-            }}
-          >
+          <section className="game-board-container">
             {/* Team A Panel */}
             <div
-              className="team-panel"
+              className="team-panel team-panel-a"
               style={{
                 border: `2px solid ${currentTeamIndex === 0 ? (isStealing ? 'var(--tertiary)' : 'var(--primary)') : 'transparent'}`,
                 boxShadow: currentTeamIndex === 0 ? `0 0 40px ${isStealing ? 'rgba(255,224,131,0.3)' : 'rgba(144,171,255,0.4)'}` : 'none',
@@ -869,7 +861,7 @@ const GamePage = () => {
                   {isStealing ? '¡ROBO!' : 'Turno Activo'}
                 </div>
               )}
-              <div style={{ width: '80px', height: '80px', borderRadius: '50%', border: '4px solid var(--primary)', background: 'rgba(144,171,255,0.1)', display: 'flex', alignItems: 'center', justifyContent: 'center', boxShadow: currentTeamIndex === 0 ? '0 0 20px rgba(144,171,255,0.4)' : 'none' }}>
+              <div className="hidden-mobile" style={{ width: '80px', height: '80px', borderRadius: '50%', border: '4px solid var(--primary)', background: 'rgba(144,171,255,0.1)', display: 'flex', alignItems: 'center', justifyContent: 'center', boxShadow: currentTeamIndex === 0 ? '0 0 20px rgba(144,171,255,0.4)' : 'none' }}>
                 <span className="material-symbols-outlined" style={{ fontSize: '2.5rem', color: 'var(--primary)', fontVariationSettings: "'FILL' 1" }}>groups</span>
               </div>
               <h3 className="font-headline" style={{ fontSize: '1.125rem', fontWeight: 900, color: 'white', textAlign: 'center', marginBottom: 0 }}>{teams[0].name}</h3>
@@ -885,14 +877,14 @@ const GamePage = () => {
             </div>
 
             {/* Board */}
-            <div style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
+            <div className="board-panel">
               <AnswerBoard answers={question?.answers || []} revealedAnswers={revealedAnswers} forceRevealAll={isRoundOver} />
               <StrikeIndicator strikes={currentStrikes} />
             </div>
 
             {/* Team B Panel */}
             <div
-              className="team-panel"
+              className="team-panel team-panel-b"
               style={{
                 border: `2px solid ${currentTeamIndex === 1 ? (isStealing ? 'var(--tertiary)' : 'var(--secondary)') : 'transparent'}`,
                 boxShadow: currentTeamIndex === 1 ? `0 0 40px ${isStealing ? 'rgba(255,224,131,0.3)' : 'rgba(255,143,6,0.3)'}` : 'none',
@@ -907,7 +899,7 @@ const GamePage = () => {
                   {isStealing ? '¡ROBO!' : 'Turno Activo'}
                 </div>
               )}
-              <div style={{ width: '80px', height: '80px', borderRadius: '50%', border: '4px solid var(--secondary)', background: 'rgba(255,143,6,0.1)', display: 'flex', alignItems: 'center', justifyContent: 'center', boxShadow: currentTeamIndex === 1 ? '0 0 20px rgba(255,143,6,0.4)' : 'none' }}>
+              <div className="hidden-mobile" style={{ width: '80px', height: '80px', borderRadius: '50%', border: '4px solid var(--secondary)', background: 'rgba(255,143,6,0.1)', display: 'flex', alignItems: 'center', justifyContent: 'center', boxShadow: currentTeamIndex === 1 ? '0 0 20px rgba(255,143,6,0.4)' : 'none' }}>
                 <span className="material-symbols-outlined" style={{ fontSize: '2.5rem', color: 'var(--secondary)', fontVariationSettings: "'FILL' 1" }}>groups</span>
               </div>
               <h3 className="font-headline" style={{ fontSize: '1.125rem', fontWeight: 900, color: 'white', textAlign: 'center', marginBottom: 0 }}>{teams[1].name}</h3>

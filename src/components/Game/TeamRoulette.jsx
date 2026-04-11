@@ -65,8 +65,9 @@ const TeamRoulette = ({ teams, onComplete, socket, connectedRoom }) => {
     }}>
       <h2 className="font-headline" style={{ 
         color: 'white', 
-        fontSize: '2.5rem', 
+        fontSize: 'clamp(1.5rem, 5vw, 2.5rem)', 
         marginBottom: '40px',
+        textAlign: 'center',
         textShadow: '0 0 20px rgba(168,85,247,0.8)' 
       }}>
         ¿Quién responde primero?
