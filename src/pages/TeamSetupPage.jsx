@@ -779,7 +779,7 @@ const TeamSetupPage = () => {
                  
                  {userCategories.length > 0 && (
                    <>
-                     <h3 style={{ width: '100%', textAlign: 'center', color: 'var(--tertiary)', fontSize: '0.8rem', marginTop: '16px' }}>TUS MAZOS PERSONALIZADOS</h3>
+                     <h3 style={{ width: '100%', textAlign: 'center', color: '#c084fc', fontSize: '0.8rem', marginTop: '16px' }}>TUS MAZOS PERSONALIZADOS</h3>
                      {userCategories.map(cat => {
                        const catIdStr = `USR:${cat._id}`;
                        const isSelected = selectedCategories.includes(catIdStr);
@@ -788,9 +788,9 @@ const TeamSetupPage = () => {
                            key={cat._id}
                            onClick={() => toggleCategory(catIdStr)}
                            style={{
-                             background: isSelected ? 'var(--tertiary)' : 'rgba(168,85,247,0.1)',
-                             color: isSelected ? 'white' : 'var(--tertiary)',
-                             border: `1px solid ${isSelected ? 'var(--tertiary)' : 'rgba(168,85,247,0.3)'}`,
+                             background: isSelected ? '#a855f7' : 'rgba(168,85,247,0.1)',
+                             color: isSelected ? 'white' : '#c084fc',
+                             border: `1px solid ${isSelected ? '#a855f7' : 'rgba(168,85,247,0.3)'}`,
                              padding: '8px 16px',
                              borderRadius: '30px',
                              fontWeight: 700,
