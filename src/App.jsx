@@ -8,6 +8,7 @@ import RoomsPage from './pages/RoomsPage';
 import LoginPage from './pages/LoginPage';
 import RegisterPage from './pages/RegisterPage';
 import ProfilePage from './pages/ProfilePage';
+import UserCardsPage from './pages/UserCardsPage';
 import AdminLoginPage from './pages/AdminLoginPage';
 import AdminDashboardPage from './pages/AdminDashboardPage';
 import { SocketProvider } from './contexts/SocketContext';
@@ -29,6 +30,7 @@ function App() {
             <Route path="/login" element={<LoginPage />} />
             <Route path="/register" element={<RegisterPage />} />
             <Route path="/profile" element={<ProfilePage />} />
+            <Route path="/mis-mazos" element={<UserCardsPage />} />
             
             {/* Rutas de Admin */}
             <Route path="/admin" element={<Navigate to="/admin/login" replace />} />

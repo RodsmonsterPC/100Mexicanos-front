@@ -305,16 +305,33 @@ const TeamSetupPage = () => {
   const myColorRef = useRef(user?.avatarColor || getRandomColor());
   const lastEmitTime = useRef(0);
 
+  const [userCategories, setUserCategories] = useState([]);
+
   useEffect(() => {
     // Load categories
     const loadCategories = async () => {
       try {
         const res = await getCategories();
+        let allCategories = [];
         if(res.success) {
           setAvailableCategories(res.data);
-          // By default, select everything
-          setSelectedCategories(res.data);
+          allCategories = [...res.data];
         }
+
+        if (user && user.token) {
+           const uRes = await fetch(`${import.meta.env.VITE_API_URL || 'https://one00mexicanos-back.onrender.com'}/api/user-categories`, {
+               headers: { 'Authorization': `Bearer ${user.token}` }
+           });
+           if (uRes.ok) {
+               const uData = await uRes.json();
+               const playable = uData.filter(cat => cat.isPlayable);
+               setUserCategories(playable);
+               // Add playable user categories ID to all categories selection by default
+               allCategories = [...allCategories, ...playable.map(c => `USR:${c._id}`)];
+           }
+        }
+
+        setSelectedCategories(allCategories);
       } catch (err) {
         console.error('Error fetching categories', err);
       }
@@ -731,6 +748,7 @@ const TeamSetupPage = () => {
                <div style={{ color: 'var(--primary)' }}>Cargando categorías...</div>
             ) : (
                <div style={{ display: 'flex', flexWrap: 'wrap', gap: '8px', justifyContent: 'center', maxWidth: '800px' }}>
+                 <h3 style={{ width: '100%', textAlign: 'center', color: 'var(--on-surface-variant)', fontSize: '0.8rem', marginTop: '8px' }}>PÚBLICOS</h3>
                  {availableCategories.map(cat => {
                    const isSelected = selectedCategories.includes(cat);
                    return (
@@ -758,6 +776,40 @@ const TeamSetupPage = () => {
                      </button>
                    );
                  })}
+                 
+                 {userCategories.length > 0 && (
+                   <>
+                     <h3 style={{ width: '100%', textAlign: 'center', color: 'var(--tertiary)', fontSize: '0.8rem', marginTop: '16px' }}>TUS MAZOS PERSONALIZADOS</h3>
+                     {userCategories.map(cat => {
+                       const catIdStr = `USR:${cat._id}`;
+                       const isSelected = selectedCategories.includes(catIdStr);
+                       return (
+                         <button
+                           key={cat._id}
+                           onClick={() => toggleCategory(catIdStr)}
+                           style={{
+                             background: isSelected ? 'var(--tertiary)' : 'rgba(168,85,247,0.1)',
+                             color: isSelected ? 'white' : 'var(--tertiary)',
+                             border: `1px solid ${isSelected ? 'var(--tertiary)' : 'rgba(168,85,247,0.3)'}`,
+                             padding: '8px 16px',
+                             borderRadius: '30px',
+                             fontWeight: 700,
+                             cursor: 'pointer',
+                             transition: 'all 0.2s',
+                             display: 'flex',
+                             alignItems: 'center',
+                             gap: '6px',
+                             fontSize: '0.85rem',
+                             boxShadow: isSelected ? '0 0 15px rgba(168,85,247,0.4)' : 'none'
+                           }}
+                         >
+                           {isSelected ? <span className="material-symbols-outlined" style={{ fontSize: '1rem', fontVariationSettings: "'FILL' 1" }}>check_circle</span> : <span className="material-symbols-outlined" style={{ fontSize: '1rem', fontVariationSettings: "'FILL' 1" }}>style</span>}
+                           {cat.name}
+                         </button>
+                       );
+                     })}
+                   </>
+                 )}
                </div>
             )}
           </section>

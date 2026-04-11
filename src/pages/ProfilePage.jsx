@@ -84,6 +84,16 @@ const ProfilePage = () => {
                 </div>
             </div>
 
+            <div style={{ marginBottom: '24px' }}>
+                <button 
+                  onClick={() => navigate('/mis-mazos')}
+                  style={{ width: '100%', padding: '16px', background: 'linear-gradient(135deg, var(--primary-dim), #1e3a8a)', color: 'white', border: '1px solid var(--primary)', borderRadius: '12px', fontWeight: 800, fontSize: '1.1rem', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '8px', boxShadow: '0 4px 15px rgba(144, 171, 255, 0.3)' }}
+                >
+                  <span className="material-symbols-outlined" style={{ fontSize: '1.3rem' }}>style</span>
+                  MIS MAZOS DE CARTAS
+                </button>
+            </div>
+
             <form onSubmit={handleUpdate} style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
               <div>
                 <label style={{ color: 'var(--on-surface-variant)', fontSize: '0.8rem', fontWeight: 600 }}>CÓDIGO DE COLOR</label>
