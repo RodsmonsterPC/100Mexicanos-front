@@ -18,24 +18,32 @@ const RouletteOverlay = ({ onEventComplete }) => {
   const [spinning, setSpinning] = useState(false);
   const [result, setResult] = useState(null);
   const [hasSpun, setHasSpun] = useState(false);
+  const [finalAngle, setFinalAngle] = useState(0);
 
   const handleSpin = () => {
     setSpinning(true);
     setHasSpun(true);
     
-    // Spin animation for 2.5 seconds
+    // Choose randomly
+    const selectedIndex = Math.floor(Math.random() * EVENTS.length);
+    const randomEvent = EVENTS[selectedIndex];
+    
+    const offset = Math.floor(Math.random() * 40) - 20;
+    const targetAngle = 1800 + (360 - (selectedIndex * 72 + 36)) + offset;
+    
+    setFinalAngle(targetAngle);
+    
+    // Spin animation for 3 seconds
     setTimeout(() => {
-      const randomEvent = EVENTS[Math.floor(Math.random() * EVENTS.length)];
       setResult(randomEvent);
-      setSpinning(false);
-      
       // Let it show for 3.5 seconds
       setTimeout(() => {
         onEventComplete(randomEvent.id);
       }, 3500);
-      
-    }, 2500);
+    }, 3000);
   };
+
+  const gradientColors = EVENTS.map((ev, i) => `${ev.color} ${i * 72}deg ${(i + 1) * 72}deg`).join(', ');
 
   return (
     <div style={{
@@ -43,10 +51,48 @@ const RouletteOverlay = ({ onEventComplete }) => {
       background: 'rgba(0,0,0,0.95)', zIndex: 9999999,
       display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', backdropFilter: 'blur(10px)'
     }}>
-      <h2 className="font-headline" style={{ color: 'white', fontSize: '3rem', marginBottom: '40px', textShadow: '0 0 20px rgba(168,85,247,0.8)' }}>
+      <h2 className="font-headline" style={{ color: 'white', fontSize: '3rem', marginBottom: '40px', textShadow: '0 0 20px rgba(168,85,247,0.8)', textAlign: 'center' }}>
         ¡EVENTO DE LA RONDA!
       </h2>
       
+      {!result ? (
+        <div style={{ position: 'relative', width: '350px', height: '350px', display: 'flex', alignItems: 'center', justifyContent: 'center', marginBottom: '40px' }}>
+          {/* Pointer */}
+          <div style={{ position: 'absolute', top: '-30px', zIndex: 10, color: 'white', transform: 'rotate(180deg)' }}>
+            <span className="material-symbols-outlined" style={{ fontSize: '4rem', fontVariationSettings: "'FILL' 1", textShadow: '0 0 15px rgba(0,0,0,0.8)' }}>change_history</span>
+          </div>
+          
+          {/* Wheel */}
+          <div style={{
+            width: '100%', height: '100%', borderRadius: '50%',
+            border: '8px solid rgba(255,255,255,0.2)',
+            position: 'relative', overflow: 'hidden',
+            transition: 'transform 3s cubic-bezier(0.2, 0.8, 0.2, 1)',
+            transform: `rotate(${finalAngle}deg)`,
+            boxShadow: '0 0 50px rgba(0,0,0,0.5)',
+            background: `conic-gradient(from 0deg, ${gradientColors})`
+          }}>
+            {/* Slices Text */}
+            {EVENTS.map((ev, i) => {
+               const angle = i * 72 + 36;
+               return (
+                 <div key={i} style={{
+                   position: 'absolute', top: 0, left: 0, right: 0, bottom: 0,
+                   transform: `rotate(${angle}deg)`,
+                   display: 'flex', flexDirection: 'column', alignItems: 'center', paddingTop: '20px'
+                 }}>
+                    <span className="font-headline" style={{ color: 'white', fontSize: '1.2rem', textShadow: '0 2px 4px rgba(0,0,0,0.9)', textAlign: 'center', textTransform: 'uppercase', maxWidth: '80px', lineHeight: '1.2' }}>
+                      {ev.label}
+                    </span>
+                 </div>
+               );
+            })}
+            {/* Center dot */}
+            <div style={{ position: 'absolute', top: '50%', left: '50%', transform: 'translate(-50%, -50%)', width: '50px', height: '50px', background: '#1e1e2f', borderRadius: '50%', border: '4px solid white', boxShadow: '0 0 15px rgba(0,0,0,0.5)', zIndex: 5 }} />
+          </div>
+        </div>
+      ) : null}
+
       {!hasSpun && (
         <button 
           className="btn-primary" 
@@ -57,16 +103,7 @@ const RouletteOverlay = ({ onEventComplete }) => {
         </button>
       )}
 
-      {spinning && (
-        <div style={{
-          width: '200px', height: '200px', borderRadius: '50%',
-          border: '10px solid rgba(255,255,255,0.1)',
-          borderTopColor: 'var(--primary)',
-          animation: 'spin 1s linear infinite'
-        }} />
-      )}
-      
-      {!spinning && result && (
+      {result && (
         <div style={{
           background: result.color,
           padding: '40px 60px',
