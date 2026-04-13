@@ -115,7 +115,7 @@ const YoVs100GamePage = () => {
   const sndCorrect = new Audio(correctSfx);
   const sndIncorrect = new Audio(incorrectSfx);
 
-  const fetchQuestion = async (excludeIds) => {
+  const fetchQuestion = async (excludeIds, isPendingRecovery = false) => {
     try {
       const data = await getRandomQuestion([], excludeIds);
       if (data.success) {
@@ -128,8 +128,8 @@ const YoVs100GamePage = () => {
         }
         setTimer(40); // Reset timer automatically on new question
         
-        // If recovery event was triggered, select up to 2 random boxes
-        if (recoveryBoxes.includes('PENDING')) {
+        // Handle recovery event using the passed parameter to avoid closure state issues
+        if (isPendingRecovery) {
            const indices = [];
            const amt = Math.min(2, data.data.answers.length);
            while(indices.length < amt) {
@@ -137,8 +137,7 @@ const YoVs100GamePage = () => {
               if(!indices.includes(r)) indices.push(r);
            }
            setRecoveryBoxes(indices);
-        } else if (!recoveryBoxes.includes('PENDING') && recoveryBoxes.length > 0) {
-           // Si ya pasamos la ronda donde recuperaba, limpiar.
+        } else {
            setRecoveryBoxes([]);
         }
 
@@ -276,10 +275,10 @@ const YoVs100GamePage = () => {
     setShowRoulette(false);
     
     // Apply event
-    let pendingRecovery = false;
+    let isPendingRecovery = false;
     
     if (eventId === 'RECUPERA_VIDAS') {
-      pendingRecovery = true;
+      isPendingRecovery = true;
     } else if (eventId === 'PUNTOS_x2') {
       setMultiplier(2);
     } else if (eventId === 'PUNTOS_x3') {
@@ -294,14 +293,8 @@ const YoVs100GamePage = () => {
       });
     }
     
-    if (pendingRecovery) {
-       setRecoveryBoxes(['PENDING']); 
-    } else {
-       setRecoveryBoxes([]);
-    }
-    
-    // Transition to new round question
-    fetchQuestion(seenIds);
+    // Transition to new round question with the exact recovery state
+    fetchQuestion(seenIds, isPendingRecovery);
   };
 
   if (!question) {
@@ -412,17 +405,23 @@ const YoVs100GamePage = () => {
                        
                        if (isRevealed) {
                          return (
-                           <div key={index} className="answer-tile answer-tile-revealed" style={isLifeBox ? { boxShadow: '0 0 20px #10b981', borderColor: '#10b981' } : {}}>
+                           <div key={index} className="answer-tile answer-tile-revealed" style={isLifeBox ? { boxShadow: '0 0 30px #10b981', border: '3px solid #10b981' } : {}}>
                              <span className="answer-text">
                                {index + 1}. {answer.text}
                              </span>
-                             <span className="answer-points">{answer.points} {isLifeBox && <span className="material-symbols-outlined" style={{color: '#10b981', fontVariationSettings: "'FILL' 1", marginLeft: '4px'}}>favorite</span>}</span>
+                             <span className="answer-points">
+                               {answer.points} 
+                               {isLifeBox && <span className="material-symbols-outlined" style={{color: '#10b981', fontVariationSettings: "'FILL' 1", marginLeft: '8px', verticalAlign: 'middle', animation: 'popIn 0.5s cubic-bezier(0.175, 0.885, 0.32, 1.275)'}}>favorite</span>}
+                             </span>
                            </div>
                          );
                        }
                        return (
-                         <div key={index} className="answer-tile answer-tile-hidden" style={isLifeBox ? { border: '2px solid #10b981', background: 'rgba(16,185,129,0.1)' } : {}}>
-                           {index + 1} {isLifeBox && <span className="material-symbols-outlined" style={{position: 'absolute', right: '20px', color: '#10b981', opacity: 0.5}}>favorite</span>}
+                         <div key={index} className="answer-tile answer-tile-hidden" style={isLifeBox ? { border: '4px solid #10b981', background: 'rgba(16,185,129,0.3)', boxShadow: '0 0 20px rgba(16,185,129,0.5)' } : {}}>
+                           <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '16px', width: '100%', position: 'relative' }}>
+                             <span>{index + 1}</span>
+                             {isLifeBox && <span className="material-symbols-outlined" style={{ position: 'absolute', right: '20px', color: '#10b981', fontVariationSettings: "'FILL' 1", fontSize: '2.5rem', animation: 'pulse 1.5s infinite', textShadow: '0 0 10px rgba(16,185,129,0.8)' }}>favorite</span>}
+                           </div>
                          </div>
                        );
                      })}
@@ -450,17 +449,18 @@ const YoVs100GamePage = () => {
                     style={{
                       flex: 1,
                       background: 'rgba(0,0,0,0.5)',
-                      border: '2px solid rgba(255,255,255,0.1)',
-                      borderRadius: '16px',
-                      padding: '0 24px',
-                      fontSize: '1.5rem',
-                      fontWeight: 700,
+                      border: '2px solid rgba(255,255,255,0.15)',
+                      borderRadius: '20px',
+                      padding: '24px 32px',
+                      fontSize: '2rem',
+                      fontWeight: 800,
                       color: 'white',
                       fontFamily: 'Be Vietnam Pro',
                       outline: 'none',
+                      boxShadow: 'inset 0 0 15px rgba(0,0,0,0.5)',
                     }}
                   />
-                  <button type="submit" disabled={validating || showRoulette || !inputValue.trim()} className="btn-primary" style={{ padding: '0 32px', fontSize: '1.2rem' }}>
+                  <button type="submit" disabled={validating || showRoulette || !inputValue.trim()} className="btn-primary" style={{ padding: '0 40px', fontSize: '1.5rem', borderRadius: '20px' }}>
                      ENVIAR
                   </button>
                </form>
