@@ -373,18 +373,18 @@ const YoVs100GamePage = () => {
          </div>
        )}
 
-       <div style={{ position: 'relative', zIndex: 10, padding: '100px 24px 40px', maxWidth: '1400px', margin: '0 auto', display: 'flex', gap: '32px' }}>
+       <div className="yovs100-layout">
          
          {/* LEFT PANEL: Stats */}
-         <div style={{ width: '300px', display: 'flex', flexDirection: 'column', gap: '20px' }}>
-            <div className="glass-card" style={{ padding: '24px', textAlign: 'center', borderTop: '4px solid var(--primary)' }}>
-               <h2 className="font-headline" style={{ color: 'var(--primary)', margin: 0, fontSize: '1.2rem', textTransform: 'uppercase' }}>Supervivencia</h2>
-               <div style={{ fontSize: '2rem', fontWeight: 900, color: 'white', marginTop: '8px' }}>Ronda {round}</div>
+         <div className="yovs100-stats">
+            <div className="glass-card yovs100-stat-card yovs100-stat-round" style={{ padding: '24px', textAlign: 'center', borderTop: '4px solid var(--primary)' }}>
+               <h2 className="font-headline stat-label" style={{ color: 'var(--primary)', margin: 0, fontSize: '1.2rem', textTransform: 'uppercase' }}>Supervivencia</h2>
+               <div className="stat-val" style={{ fontSize: '2rem', fontWeight: 900, color: 'white', marginTop: '8px' }}>Ronda {round}</div>
             </div>
             
-            <div className="glass-card" style={{ padding: '24px', textAlign: 'center' }}>
-               <h3 style={{ color: 'var(--on-surface-variant)', fontSize: '0.85rem', textTransform: 'uppercase', letterSpacing: '0.1em' }}>Puntos</h3>
-               <div style={{ fontSize: '2.5rem', fontWeight: 900, color: 'var(--tertiary)' }}>{score}</div>
+            <div className="glass-card yovs100-stat-card yovs100-stat-points" style={{ padding: '24px', textAlign: 'center' }}>
+               <h3 className="stat-label" style={{ color: 'var(--on-surface-variant)', fontSize: '0.85rem', textTransform: 'uppercase', letterSpacing: '0.1em' }}>Puntos</h3>
+               <div className="stat-val" style={{ fontSize: '2.5rem', fontWeight: 900, color: 'var(--tertiary)' }}>{score}</div>
                {multiplier > 1 && (
                   <div style={{ background: 'var(--tertiary)', color: 'white', padding: '4px 12px', borderRadius: '16px', display: 'inline-block', fontSize: '0.8rem', fontWeight: 'bold', marginTop: '8px' }}>
                      x{multiplier} ACTIVO
@@ -392,21 +392,21 @@ const YoVs100GamePage = () => {
                )}
             </div>
 
-            <div className="glass-card" style={{ padding: '24px', textAlign: 'center', borderTop: '4px solid #ef4444' }}>
-               <h3 style={{ color: 'var(--on-surface-variant)', fontSize: '0.85rem', textTransform: 'uppercase', letterSpacing: '0.1em', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '8px' }}>
+            <div className="glass-card yovs100-stat-card yovs100-stat-lives" style={{ padding: '24px', textAlign: 'center', borderTop: '4px solid #ef4444' }}>
+               <h3 className="stat-label" style={{ color: 'var(--on-surface-variant)', fontSize: '0.85rem', textTransform: 'uppercase', letterSpacing: '0.1em', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '8px' }}>
                   <span className="material-symbols-outlined" style={{ color: '#ef4444', fontVariationSettings: "'FILL' 1" }}>favorite</span>
                   Vidas
                </h3>
-               <div style={{ fontSize: '3rem', fontWeight: 900, color: '#ef4444', marginTop: '8px' }}>
+               <div className="stat-val" style={{ fontSize: '3rem', fontWeight: 900, color: '#ef4444', marginTop: '8px' }}>
                   {lives} <span style={{ fontSize: '1.5rem', color: 'rgba(255,255,255,0.3)'}}>/ 20</span>
                </div>
             </div>
-            <div className="glass-card" style={{ padding: '24px', textAlign: 'center' }}>
-               <h3 style={{ color: 'var(--on-surface-variant)', fontSize: '0.85rem', textTransform: 'uppercase', letterSpacing: '0.1em', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '8px' }}>
+            <div className="glass-card yovs100-stat-card yovs100-stat-wildcards" style={{ padding: '24px', textAlign: 'center' }}>
+               <h3 className="stat-label" style={{ color: 'var(--on-surface-variant)', fontSize: '0.85rem', textTransform: 'uppercase', letterSpacing: '0.1em', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '8px' }}>
                   <span className="material-symbols-outlined" style={{ color: '#f59e0b' }}>star</span>
                   Comodines
                </h3>
-               <div style={{ fontSize: '2rem', fontWeight: 900, color: '#f59e0b', marginTop: '8px' }}>{wildcards}</div>
+               <div className="stat-val" style={{ fontSize: '2rem', fontWeight: 900, color: '#f59e0b', marginTop: '8px' }}>{wildcards}</div>
                <button 
                  onClick={handleUseWildcard}
                  disabled={wildcards <= 0}
@@ -418,7 +418,7 @@ const YoVs100GamePage = () => {
              </div>
 
              {/* Terminar Partida Button */}
-             <div style={{ marginTop: 'auto' }}>
+             <div className="yovs100-stat-endbtn" style={{ marginTop: 'auto' }}>
                <button 
                  onClick={() => endGame(score, round)}
                  className="btn-secondary"
@@ -430,8 +430,8 @@ const YoVs100GamePage = () => {
          </div>
          
          {/* RIGHT PANEL: Game Board */}
-         <div style={{ flex: 1, display: 'flex', flexDirection: 'column', gap: '24px', width: '100%', maxWidth: '800px' }}>
-            <div className="glass-card" style={{ padding: '32px', textAlign: 'center', minHeight: '160px', display: 'flex', flexDirection: 'column', justifyContent: 'center' }}>
+         <div className="yovs100-board">
+            <div className="glass-card yovs100-question" style={{ padding: '32px', textAlign: 'center', minHeight: '160px', display: 'flex', flexDirection: 'column', justifyContent: 'center' }}>
                <h2 className="font-headline" style={{ color: 'white', fontSize: '2.5rem', margin: 0, textShadow: '0 4px 10px rgba(0,0,0,0.5)' }}>
                   {question.question}
                </h2>
@@ -440,7 +440,7 @@ const YoVs100GamePage = () => {
                </div>
             </div>
             
-            <div style={{ display: 'flex', gap: '24px' }}>
+            <div className="yovs100-answers" style={{ display: 'flex', gap: '24px' }}>
                <div style={{ flex: 1 }}>
                   {/* MODIFICACIÓN DE ANSWERBOARD PARA MOSTRAR CASILLAS DE VIDA */}
                   <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
@@ -474,15 +474,15 @@ const YoVs100GamePage = () => {
                </div>
             </div>
 
-            <div className="glass-card" style={{ padding: '24px', display: 'flex', gap: '24px', alignItems: 'center' }}>
-               <div style={{ 
+            <div className="glass-card yovs100-input-area" style={{ padding: '24px', display: 'flex', gap: '24px', alignItems: 'center' }}>
+               <div className="yovs100-timer" style={{ 
                   width: '80px', height: '80px', flexShrink: 0, borderRadius: '50%', background: timer <= 10 ? 'rgba(239, 68, 68, 0.2)' : 'rgba(255,255,255,0.05)', display: 'flex', alignItems: 'center', justifyContent: 'center', 
                   border: `4px solid ${timer <= 10 ? '#ef4444' : 'var(--primary)'}` 
                }}>
                   <span style={{ fontSize: '2rem', fontWeight: 900, color: timer <= 10 ? '#ef4444' : 'white' }}>{timer}</span>
                </div>
                
-               <form onSubmit={handleValidation} style={{ flex: 1, display: 'flex', gap: '16px', minWidth: 0 }}>
+               <form onSubmit={handleValidation} className="yovs100-input-area-form" style={{ flex: 1, display: 'flex', gap: '16px', minWidth: 0 }}>
                   <input
                     ref={inputRef}
                     type="text"

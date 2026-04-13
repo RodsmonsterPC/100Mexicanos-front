@@ -966,3 +966,108 @@ body {
   background: var(--primary-container);
   color: var(--on-primary-container);
 }
+
+/* ========== YO VS 100 LAYOUT ========== */
+.yovs100-layout {
+  position: relative;
+  z-index: 10;
+  padding: 100px 24px 40px;
+  max-width: 1400px;
+  margin: 0 auto;
+  display: flex;
+  gap: 32px;
+}
+
+.yovs100-stats {
+  width: 300px;
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+}
+
+.yovs100-board {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  gap: 24px;
+  width: 100%;
+  max-width: 800px;
+}
+
+@media (max-width: 768px) {
+  .yovs100-layout {
+    flex-direction: column;
+    padding: 80px 16px 20px;
+    gap: 20px;
+  }
+  
+  .yovs100-stats {
+    width: 100%;
+    display: grid;
+    grid-template-columns: 1fr 1fr 1fr;
+    grid-template-areas: 
+      "round round round"
+      "points lives wildcards"
+      "endbtn endbtn endbtn";
+    gap: 12px;
+  }
+  
+  .yovs100-stat-round { grid-area: round; }
+  .yovs100-stat-points { grid-area: points; }
+  .yovs100-stat-lives { grid-area: lives; }
+  .yovs100-stat-wildcards { grid-area: wildcards; }
+  .yovs100-stat-endbtn { grid-area: endbtn; margin-top: 0 !important; }
+
+  .glass-card.yovs100-stat-card {
+    padding: 12px !important;
+  }
+  
+  .yovs100-stat-card h2,
+  .yovs100-stat-card h3 {
+    font-size: 0.75rem !important;
+  }
+  
+  .yovs100-stat-card .stat-val {
+    font-size: 1.5rem !important;
+  }
+
+  .yovs100-board {
+    display: flex;
+    flex-direction: column;
+  }
+
+  .yovs100-question { order: 2; }
+  .yovs100-answers { order: 3; }
+  .yovs100-input-area { 
+    order: 1; 
+    margin-bottom: 12px;
+    padding: 16px !important;
+    flex-direction: column; 
+    gap: 16px;
+  }
+  
+  .yovs100-input-area-form {
+    flex-direction: column;
+    width: 100%;
+  }
+
+  .yovs100-input-area input {
+    font-size: 1.25rem !important;
+    padding: 16px 24px !important;
+  }
+  
+  .yovs100-input-area button {
+    width: 100%;
+    padding: 16px !important;
+    font-size: 1.25rem !important;
+  }
+
+  .yovs100-timer {
+    width: 60px !important;
+    height: 60px !important;
+  }
+  .yovs100-timer span {
+    font-size: 1.5rem !important;
+  }
+}
+
