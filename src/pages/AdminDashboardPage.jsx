@@ -12,6 +12,9 @@ const AdminDashboardPage = () => {
   const [deleteCatModalOpen, setDeleteCatModalOpen] = useState(false);
   const [isSidebarOpen, setIsSidebarOpen] = useState(false);
   const [editingCard, setEditingCard] = useState(null);
+  const [currentPage, setCurrentPage] = useState(1);
+  const itemsPerPage = 5;
+
   const [formData, setFormData] = useState({
     question: '',
     category: 'General',
@@ -34,6 +37,10 @@ const AdminDashboardPage = () => {
     }
     fetchQuestions();
   }, [navigate, token]);
+
+  useEffect(() => {
+    setCurrentPage(1);
+  }, [searchQuery, selectedFilter]);
 
   const fetchQuestions = async () => {
     try {
@@ -376,14 +383,15 @@ const AdminDashboardPage = () => {
         {loading ? (
           <div style={{ textAlign: 'center', padding: '40px' }}>Cargando datos...</div>
         ) : (
-          <div className="cards-grid">
-            {filteredQuestions.length === 0 ? (
-              <div style={{ gridColumn: '1 / -1', textAlign: 'center', padding: '40px', color: 'var(--on-surface-variant)' }}>
-                No se encontraron tarjetas para esta categoría.
-              </div>
-            ) : null}
-            {filteredQuestions.map(q => (
-              <div key={q._id} className="glass-card" style={{ padding: '24px', display: 'flex', flexDirection: 'column', position: 'relative' }}>
+          <>
+            <div className="cards-grid">
+              {filteredQuestions.length === 0 ? (
+                <div style={{ gridColumn: '1 / -1', textAlign: 'center', padding: '40px', color: 'var(--on-surface-variant)' }}>
+                  No se encontraron tarjetas para esta categoría.
+                </div>
+              ) : null}
+              {filteredQuestions.slice((currentPage - 1) * itemsPerPage, currentPage * itemsPerPage).map(q => (
+                <div key={q._id} className="glass-card" style={{ padding: '24px', display: 'flex', flexDirection: 'column', position: 'relative' }}>
                 <div style={{ 
                   display: 'inline-block',
                   alignSelf: 'flex-start',
@@ -419,7 +427,30 @@ const AdminDashboardPage = () => {
                 </div>
               </div>
             ))}
-          </div>
+            </div>
+
+            {filteredQuestions.length > itemsPerPage && (
+              <div style={{ display: 'flex', justifyContent: 'center', alignItems: 'center', gap: '16px', marginTop: '40px' }}>
+                <button 
+                  onClick={() => setCurrentPage(prev => Math.max(prev - 1, 1))}
+                  disabled={currentPage === 1}
+                  style={{ background: 'rgba(255,255,255,0.1)', color: currentPage === 1 ? 'rgba(255,255,255,0.3)' : 'white', border: 'none', padding: '8px 16px', borderRadius: '8px', cursor: currentPage === 1 ? 'not-allowed' : 'pointer', fontWeight: 600, transition: 'background 0.2s' }}
+                >
+                  Anterior
+                </button>
+                <span style={{ color: 'var(--on-surface-variant)', fontWeight: 600, fontSize: '0.95rem' }}>
+                  Página {currentPage} de {Math.ceil(filteredQuestions.length / itemsPerPage)}
+                </span>
+                <button 
+                  onClick={() => setCurrentPage(prev => Math.min(prev + 1, Math.ceil(filteredQuestions.length / itemsPerPage)))}
+                  disabled={currentPage === Math.ceil(filteredQuestions.length / itemsPerPage)}
+                  style={{ background: 'rgba(255,255,255,0.1)', color: currentPage === Math.ceil(filteredQuestions.length / itemsPerPage) ? 'rgba(255,255,255,0.3)' : 'white', border: 'none', padding: '8px 16px', borderRadius: '8px', cursor: currentPage === Math.ceil(filteredQuestions.length / itemsPerPage) ? 'not-allowed' : 'pointer', fontWeight: 600, transition: 'background 0.2s' }}
+                >
+                  Siguiente
+                </button>
+              </div>
+            )}
+          </>
         )}
       </div>
 
