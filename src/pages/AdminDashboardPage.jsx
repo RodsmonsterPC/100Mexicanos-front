@@ -9,6 +9,7 @@ const AdminDashboardPage = () => {
   const [selectedFilter, setSelectedFilter] = useState({ type: 'all', category: null });
   const [searchQuery, setSearchQuery] = useState('');
   const [isModalOpen, setIsModalOpen] = useState(false);
+  const [deleteCatModalOpen, setDeleteCatModalOpen] = useState(false);
   const [editingCard, setEditingCard] = useState(null);
   const [formData, setFormData] = useState({
     question: '',
@@ -65,6 +66,25 @@ const AdminDashboardPage = () => {
       fetchQuestions();
     } catch (err) {
       console.error('Error deleting', err);
+    }
+  };
+
+  const handleDeleteCategory = async () => {
+    try {
+      const idsToDelete = filteredQuestions.map(q => q._id);
+      // Iteramos para borrar todas las de la categoría seleccionada
+      for (const id of idsToDelete) {
+         await fetch(`${SERVER_URL}/api/questions/${id}`, {
+            method: 'DELETE',
+            headers: { 'Authorization': `Bearer ${token}` }
+         });
+      }
+      setDeleteCatModalOpen(false);
+      setSelectedFilter({ type: 'all', category: null });
+      fetchQuestions();
+    } catch (e) {
+      console.error('Error deleting category', e);
+      alert('Error eliminando la categoría');
     }
   };
 
@@ -218,9 +238,21 @@ const AdminDashboardPage = () => {
         <div style={{ maxWidth: '1200px', margin: '0 auto' }}>
           <header style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '40px', borderBottom: '1px solid rgba(255,255,255,0.1)', paddingBottom: '20px', flexWrap: 'wrap', gap: '16px' }}>
             <div>
-              <h1 className="font-headline" style={{ color: 'white', margin: 0 }}>
-                {selectedFilter.type === 'all' ? 'Todas las Tarjetas' : selectedFilter.category}
-              </h1>
+              <div style={{ display: 'flex', alignItems: 'center', gap: '16px' }}>
+                <h1 className="font-headline" style={{ color: 'white', margin: 0 }}>
+                  {selectedFilter.type === 'all' ? 'Todas las Tarjetas' : selectedFilter.category}
+                </h1>
+                {selectedFilter.type !== 'all' && (
+                  <button 
+                    onClick={() => setDeleteCatModalOpen(true)}
+                    style={{ background: 'rgba(239, 68, 68, 0.2)', border: '1px solid rgba(239, 68, 68, 0.5)', color: '#fca5a5', padding: '6px 12px', borderRadius: '8px', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '6px', fontWeight: 600, transition: 'all 0.2s' }}
+                    title="Eliminar esta categoría y todas sus tarjetas"
+                  >
+                    <span className="material-symbols-outlined" style={{ fontSize: '1.2rem' }}>delete_sweep</span>
+                    ELIMINAR CATEGORÍA
+                  </button>
+                )}
+              </div>
               <p style={{ color: 'rgba(255,255,255,0.5)', fontSize: '0.9rem', margin: '4px 0 0 0' }}>Gestor de Tarjetas de Preguntas</p>
             </div>
             <div style={{ display: 'flex', gap: '16px', alignItems: 'center', flexWrap: 'wrap' }}>
@@ -371,6 +403,36 @@ const AdminDashboardPage = () => {
         </div>
       )}
       </main>
+
+      {/* MODAL ELIMINAR CATEGORÍA */}
+      {deleteCatModalOpen && (
+        <div style={{ position: 'fixed', top: 0, left: 0, right: 0, bottom: 0, background: 'rgba(0,0,0,0.85)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 2000, padding: '20px' }}>
+          <div className="glass-card" style={{ background: '#111827', width: '100%', maxWidth: '450px', padding: '32px', textAlign: 'center', border: '1px solid rgba(239, 68, 68, 0.3)' }}>
+            <span className="material-symbols-outlined" style={{ fontSize: '4rem', color: '#ef4444', marginBottom: '16px' }}>warning</span>
+            <h2 style={{ margin: '0 0 16px 0', color: 'white', fontSize: '1.5rem' }}>¿Eliminar Categoría?</h2>
+            <p style={{ color: 'var(--on-surface-variant)', marginBottom: '24px', lineHeight: '1.5' }}>
+              Estás a punto de eliminar la categoría <strong>"{selectedFilter.category}"</strong>. 
+              Esta acción borrará permanentemente sus <strong>{filteredQuestions.length}</strong> tarjetas asociadas y no se puede deshacer.
+            </p>
+            <div style={{ display: 'flex', gap: '16px', justifyContent: 'center' }}>
+              <button 
+                onClick={() => setDeleteCatModalOpen(false)} 
+                style={{ padding: '12px 24px', background: 'transparent', color: 'white', border: '1px solid rgba(255,255,255,0.2)', borderRadius: '8px', cursor: 'pointer', fontWeight: 600 }}
+              >
+                Cancelar
+              </button>
+              <button 
+                onClick={handleDeleteCategory} 
+                style={{ padding: '12px 24px', background: '#ef4444', color: 'white', border: 'none', borderRadius: '8px', fontWeight: 700, cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '8px' }}
+              >
+                <span className="material-symbols-outlined" style={{ fontSize: '1.2rem' }}>delete</span>
+                Sí, Eliminar Todo
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
     </div>
   );
 };
