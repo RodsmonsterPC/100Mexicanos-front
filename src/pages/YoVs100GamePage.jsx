@@ -2,8 +2,8 @@ import { useState, useEffect, useRef } from 'react';
 import { useLocation, useNavigate } from 'react-router-dom';
 import Navbar from '../components/Layout/Navbar';
 import AnswerBoard from '../components/Game/AnswerBoard';
-import correctSfx from '../assets/correct.mp3';
-import incorrectSfx from '../assets/incorrect.mp3';
+import correctSfx from '../assets/sounds/correctSound.mp3';
+import incorrectSfx from '../assets/sounds/incorrectSound.mp3';
 
 const SERVER_URL = import.meta.env.VITE_API_URL || 'http://localhost:5000';
 
