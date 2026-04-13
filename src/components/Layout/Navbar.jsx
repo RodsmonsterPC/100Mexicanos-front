@@ -27,7 +27,7 @@ const Navbar = () => {
   const navItems = [
     { icon: 'home', label: 'Inicio', path: '/' },
     { icon: 'sports_esports', label: 'Partida', path: '/teams' },
-    { icon: 'group', label: 'Salas', path: '/rooms' },
+    { icon: 'group', label: 'Multijugador', path: '/rooms' },
   ];
 
   const renderLogo = () => (

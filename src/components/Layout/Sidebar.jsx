@@ -4,7 +4,7 @@ import { useSocketContext } from '../../contexts/SocketContext';
 const navItems = [
   { icon: 'home', label: 'Inicio', path: '/' },
   { icon: 'sports_esports', label: 'Partida', path: '/teams' },
-  { icon: 'group', label: 'Salas', path: '/rooms' },
+  { icon: 'group', label: 'Multijugador', path: '/rooms' },
 ];
 
 const Sidebar = ({ activePage = 'home' }) => {
@@ -15,7 +15,7 @@ const Sidebar = ({ activePage = 'home' }) => {
     home: 'Inicio',
     teams: 'Partida',
     game: 'Partida',
-    rooms: 'Salas',
+    rooms: 'Multijugador',
   };
 
   const activeName = pageMap[activePage] || 'Inicio';
