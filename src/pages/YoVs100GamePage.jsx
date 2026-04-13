@@ -15,12 +15,16 @@ const EVENTS = [
 ];
 
 const RouletteOverlay = ({ onEventComplete }) => {
-  const [spinning, setSpinning] = useState(true);
+  const [spinning, setSpinning] = useState(false);
   const [result, setResult] = useState(null);
+  const [hasSpun, setHasSpun] = useState(false);
 
-  useEffect(() => {
-    // Spin animation for 3 seconds
-    const spinTimer = setTimeout(() => {
+  const handleSpin = () => {
+    setSpinning(true);
+    setHasSpun(true);
+    
+    // Spin animation for 2.5 seconds
+    setTimeout(() => {
       const randomEvent = EVENTS[Math.floor(Math.random() * EVENTS.length)];
       setResult(randomEvent);
       setSpinning(false);
@@ -30,28 +34,38 @@ const RouletteOverlay = ({ onEventComplete }) => {
         onEventComplete(randomEvent.id);
       }, 3500);
       
-    }, 3000);
-
-    return () => clearTimeout(spinTimer);
-  }, [onEventComplete]);
+    }, 2500);
+  };
 
   return (
     <div style={{
       position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.85)', zIndex: 9999,
       display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', backdropFilter: 'blur(10px)'
     }}>
-      <h2 className="font-headline" style={{ color: 'white', fontSize: '3rem', marginBottom: '20px', textShadow: '0 0 20px rgba(168,85,247,0.8)' }}>
+      <h2 className="font-headline" style={{ color: 'white', fontSize: '3rem', marginBottom: '40px', textShadow: '0 0 20px rgba(168,85,247,0.8)' }}>
         ¡EVENTO DE LA RONDA!
       </h2>
       
-      {spinning ? (
+      {!hasSpun && (
+        <button 
+          className="btn-primary" 
+          onClick={handleSpin}
+          style={{ fontSize: '2rem', padding: '24px 64px', borderRadius: '40px', animation: 'pulse 2s infinite' }}
+        >
+          GIRAR RULETA
+        </button>
+      )}
+
+      {spinning && (
         <div style={{
           width: '200px', height: '200px', borderRadius: '50%',
           border: '10px solid rgba(255,255,255,0.1)',
           borderTopColor: 'var(--primary)',
           animation: 'spin 1s linear infinite'
         }} />
-      ) : (
+      )}
+      
+      {!spinning && result && (
         <div style={{
           background: result.color,
           padding: '40px 60px',
@@ -84,7 +98,7 @@ const YoVs100GamePage = () => {
   const [lives, setLives] = useState(10);
   const [score, setScore] = useState(0);
   const [round, setRound] = useState(1);
-  const [wildcards, setWildcards] = useState(0);
+  const [wildcards, setWildcards] = useState(3);
   
   const [multiplier, setMultiplier] = useState(1);
   const [recoveryBoxes, setRecoveryBoxes] = useState([]);
@@ -93,6 +107,7 @@ const YoVs100GamePage = () => {
   const [timer, setTimer] = useState(40);
   const [inputValue, setInputValue] = useState('');
   const [validating, setValidating] = useState(false);
+  const [showX, setShowX] = useState(false);
   
   const inputRef = useRef(null);
   const timerRef = useRef(null);
@@ -161,6 +176,10 @@ const YoVs100GamePage = () => {
   const handleTimeout = () => {
     sndIncorrect.currentTime = 0;
     sndIncorrect.play().catch(()=>{});
+    
+    // Show visual X for 1.5 seconds
+    setShowX(true);
+    setTimeout(() => setShowX(false), 1500);
     
     setLives(prev => {
       const nextLives = prev - 1;
@@ -304,6 +323,18 @@ const YoVs100GamePage = () => {
          <div style={{ position: 'absolute', top: '-10%', left: '-10%', width: '40%', height: '40%', background: 'rgba(144,171,255,0.08)', borderRadius: '50%', filter: 'blur(100px)' }} />
        </div>
 
+       {/* Ouch X Overlay */}
+       {showX && (
+         <div style={{ 
+            position: 'fixed', inset: 0, zIndex: 9999, display: 'flex', alignItems: 'center', justifyContent: 'center',
+            background: 'rgba(239, 68, 68, 0.2)', backdropFilter: 'blur(4px)', animation: 'popIn 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275)'
+         }}>
+           <span className="font-headline" style={{ fontSize: '15rem', color: '#ef4444', fontWeight: 900, textShadow: '0 0 50px rgba(239,68,68,0.8)' }}>
+             X
+           </span>
+         </div>
+       )}
+
        <div style={{ position: 'relative', zIndex: 10, padding: '100px 24px 40px', maxWidth: '1400px', margin: '0 auto', display: 'flex', gap: '32px' }}>
          
          {/* LEFT PANEL: Stats */}
@@ -332,7 +363,6 @@ const YoVs100GamePage = () => {
                   {lives} <span style={{ fontSize: '1.5rem', color: 'rgba(255,255,255,0.3)'}}>/ 20</span>
                </div>
             </div>
-
             <div className="glass-card" style={{ padding: '24px', textAlign: 'center' }}>
                <h3 style={{ color: 'var(--on-surface-variant)', fontSize: '0.85rem', textTransform: 'uppercase', letterSpacing: '0.1em', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '8px' }}>
                   <span className="material-symbols-outlined" style={{ color: '#f59e0b' }}>star</span>
@@ -347,12 +377,23 @@ const YoVs100GamePage = () => {
                >
                  Usar Comodín
                </button>
-            </div>
+             </div>
+
+             {/* Terminar Partida Button */}
+             <div style={{ marginTop: 'auto' }}>
+               <button 
+                 onClick={() => endGame(score, round)}
+                 className="btn-secondary"
+                 style={{ width: '100%', padding: '16px', border: '1px solid #ef4444', color: '#ef4444' }}
+               >
+                 Terminar Partida
+               </button>
+             </div>
          </div>
          
          {/* RIGHT PANEL: Game Board */}
-         <div style={{ flex: 1, display: 'flex', flexDirection: 'column', gap: '24px' }}>
-            <div className="glass-card" style={{ padding: '32px', textAlign: 'center' }}>
+         <div style={{ flex: 1, display: 'flex', flexDirection: 'column', gap: '24px', width: '100%', maxWidth: '800px' }}>
+            <div className="glass-card" style={{ padding: '32px', textAlign: 'center', minHeight: '160px', display: 'flex', flexDirection: 'column', justifyContent: 'center' }}>
                <h2 className="font-headline" style={{ color: 'white', fontSize: '2.5rem', margin: 0, textShadow: '0 4px 10px rgba(0,0,0,0.5)' }}>
                   {question.question}
                </h2>
