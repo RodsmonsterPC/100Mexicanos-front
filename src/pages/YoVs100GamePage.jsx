@@ -4,8 +4,7 @@ import Navbar from '../components/Layout/Navbar';
 import AnswerBoard from '../components/Game/AnswerBoard';
 import correctSfx from '../assets/sounds/correctSound.mp3';
 import incorrectSfx from '../assets/sounds/incorrectSound.mp3';
-
-const SERVER_URL = import.meta.env.VITE_API_URL || 'http://localhost:5000';
+import { getRandomQuestion, validateAnswerAPI } from '../services/api';
 
 const EVENTS = [
   { id: 'RECUPERA_VIDAS', label: '¡Recupera Vidas!', desc: '2 casillas de la próxima tarjeta te darán +1 vida al acertarlas.', color: '#10b981' },
@@ -103,8 +102,7 @@ const YoVs100GamePage = () => {
 
   const fetchQuestion = async (excludeIds) => {
     try {
-      const res = await fetch(`${SERVER_URL}/api/questions/random?exclude=${excludeIds.join(',')}`);
-      const data = await res.json();
+      const data = await getRandomQuestion([], excludeIds);
       if (data.success) {
         setQuestion(data.data);
         setRevealedAnswers(new Array(data.data.answers.length).fill(false));
@@ -187,17 +185,7 @@ const YoVs100GamePage = () => {
     setTimer(40); // reinicio al enviar un intento
     
     try {
-      const payload = {
-        input: typed,
-        revealed: revealedAnswers
-      };
-      
-      const res = await fetch(`${SERVER_URL}/api/questions/validate/${question._id}`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(payload)
-      });
-      const data = await res.json();
+      const data = await validateAnswerAPI(question._id, typed, revealedAnswers);
       
       if (data.success && data.isCorrect && !revealedAnswers[data.matchedIndex]) {
         // Correct guess
