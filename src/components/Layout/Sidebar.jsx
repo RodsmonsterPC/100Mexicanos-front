@@ -17,6 +17,7 @@ const Sidebar = ({ activePage = 'home' }) => {
     teams: 'Partida',
     game: 'Partida',
     rooms: 'Multijugador',
+    yovs100: 'Yo vs 100',
   };
 
   const activeName = pageMap[activePage] || 'Inicio';

@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import Sidebar from '../components/Layout/Sidebar';
 import Navbar from '../components/Layout/Navbar';
@@ -8,6 +8,12 @@ const YoVs100SetupPage = () => {
   const navigate = useNavigate();
   const { user } = useAuthContext();
   const [playerName, setPlayerName] = useState(user?.username || '');
+
+  useEffect(() => {
+    if (user?.username) {
+      setPlayerName(user.username);
+    }
+  }, [user]);
 
   const handleStart = () => {
     if (!playerName.trim()) {
@@ -19,7 +25,7 @@ const YoVs100SetupPage = () => {
 
   return (
     <div className="layout-wrapper">
-      <Sidebar activePage="game" />
+      <Sidebar activePage="yovs100" />
       
       <div
         className="main-content"
