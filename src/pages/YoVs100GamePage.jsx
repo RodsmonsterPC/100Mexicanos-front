@@ -432,13 +432,13 @@ const YoVs100GamePage = () => {
 
             <div className="glass-card" style={{ padding: '24px', display: 'flex', gap: '24px', alignItems: 'center' }}>
                <div style={{ 
-                  width: '80px', height: '80px', borderRadius: '50%', background: timer <= 10 ? 'rgba(239, 68, 68, 0.2)' : 'rgba(255,255,255,0.05)', display: 'flex', alignItems: 'center', justifyContent: 'center', 
+                  width: '80px', height: '80px', flexShrink: 0, borderRadius: '50%', background: timer <= 10 ? 'rgba(239, 68, 68, 0.2)' : 'rgba(255,255,255,0.05)', display: 'flex', alignItems: 'center', justifyContent: 'center', 
                   border: `4px solid ${timer <= 10 ? '#ef4444' : 'var(--primary)'}` 
                }}>
                   <span style={{ fontSize: '2rem', fontWeight: 900, color: timer <= 10 ? '#ef4444' : 'white' }}>{timer}</span>
                </div>
                
-               <form onSubmit={handleValidation} style={{ flex: 1, display: 'flex', gap: '16px' }}>
+               <form onSubmit={handleValidation} style={{ flex: 1, display: 'flex', gap: '16px', minWidth: 0 }}>
                   <input
                     ref={inputRef}
                     type="text"
@@ -449,6 +449,7 @@ const YoVs100GamePage = () => {
                     disabled={validating || showRoulette}
                     style={{
                       flex: 1,
+                      minWidth: 0,
                       background: 'rgba(0,0,0,0.5)',
                       border: '2px solid rgba(255,255,255,0.15)',
                       borderRadius: '20px',
@@ -461,7 +462,7 @@ const YoVs100GamePage = () => {
                       boxShadow: 'inset 0 0 15px rgba(0,0,0,0.5)',
                     }}
                   />
-                  <button type="submit" disabled={validating || showRoulette || !inputValue.trim()} className="btn-primary" style={{ padding: '0 40px', fontSize: '1.5rem', borderRadius: '20px' }}>
+                  <button type="submit" disabled={validating || showRoulette || !inputValue.trim()} className="btn-primary" style={{ flexShrink: 0, padding: '0 40px', fontSize: '1.5rem', borderRadius: '20px' }}>
                      ENVIAR
                   </button>
                </form>
