@@ -5,6 +5,7 @@ const navItems = [
   { icon: 'home', label: 'Inicio', path: '/' },
   { icon: 'sports_esports', label: 'Partida', path: '/teams' },
   { icon: 'group', label: 'Multijugador', path: '/rooms' },
+  { icon: 'person', label: 'Yo vs 100', path: '/yo-vs-100' },
 ];
 
 const Sidebar = ({ activePage = 'home' }) => {

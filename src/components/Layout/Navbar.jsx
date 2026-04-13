@@ -28,6 +28,7 @@ const Navbar = () => {
     { icon: 'home', label: 'Inicio', path: '/' },
     { icon: 'sports_esports', label: 'Partida', path: '/teams' },
     { icon: 'group', label: 'Multijugador', path: '/rooms' },
+    { icon: 'person', label: 'Yo vs 100', path: '/yo-vs-100' },
   ];
 
   const renderLogo = () => (
@@ -98,6 +99,9 @@ const Navbar = () => {
         <Link to="/teams" className="font-headline" style={getLinkStyle('/teams')}>
           Equipos
         </Link>
+        <Link to="/yo-vs-100" className="font-headline" style={getLinkStyle('/yo-vs-100')}>
+          Yo vs 100
+        </Link>
         <Link to="/rules" className="font-headline" style={getLinkStyle('/rules')}>
           Reglas
         </Link>
@@ -156,6 +160,7 @@ const Navbar = () => {
         <div style={{ borderTop: '1px solid rgba(255,255,255,0.1)', paddingTop: '24px', display: 'flex', flexDirection: 'column', gap: '16px' }}>
           <Link to="/" className="font-headline" style={getLinkStyle('/')} onClick={() => setIsMobileMenuOpen(false)}>Tablero</Link>
           <Link to="/teams" className="font-headline" style={getLinkStyle('/teams')} onClick={() => setIsMobileMenuOpen(false)}>Equipos</Link>
+          <Link to="/yo-vs-100" className="font-headline" style={getLinkStyle('/yo-vs-100')} onClick={() => setIsMobileMenuOpen(false)}>Yo vs 100</Link>
           <Link to="/rules" className="font-headline" style={getLinkStyle('/rules')} onClick={() => setIsMobileMenuOpen(false)}>Reglas</Link>
         </div>
       </div>
