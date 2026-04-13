@@ -238,6 +238,13 @@ const YoVs100GamePage = () => {
     setValidating(true);
     const typed = inputValue.trim();
     setInputValue('');
+    
+    if (typed === 'RouletteTest') {
+       setShowRoulette(true);
+       setValidating(false);
+       return;
+    }
+    
     setTimer(40); // reinicio al enviar un intento
     
     try {
