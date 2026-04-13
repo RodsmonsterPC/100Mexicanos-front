@@ -6,7 +6,7 @@ const SERVER_URL = import.meta.env.VITE_API_URL || 'https://one00mexicanos-back.
 const AdminDashboardPage = () => {
   const [questions, setQuestions] = useState([]);
   const [loading, setLoading] = useState(true);
-  const [filterCategory, setFilterCategory] = useState('');
+  const [selectedFilter, setSelectedFilter] = useState({ type: 'all', category: null });
   const [searchQuery, setSearchQuery] = useState('');
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [editingCard, setEditingCard] = useState(null);
@@ -130,61 +130,120 @@ const AdminDashboardPage = () => {
     }
   };
 
-  const uniqueCategories = [...new Set(questions.map(q => q.category || 'General'))].sort();
+  const localCategories = [...new Set(questions.filter(q => !q.userCategory).map(q => q.category || 'General'))].sort();
+  const userCategories = [...new Set(questions.filter(q => q.userCategory).map(q => q.category || 'General'))].sort();
+  
   const filteredQuestions = questions.filter(q => {
-    const matchesCategory = filterCategory === '' || (q.category || 'General') === filterCategory;
     const matchesSearch = q.question.toLowerCase().includes(searchQuery.toLowerCase());
-    return matchesCategory && matchesSearch;
+    
+    let matchesFilter = true;
+    if (selectedFilter.type === 'local_category') {
+       matchesFilter = !q.userCategory && (q.category || 'General') === selectedFilter.category;
+    } else if (selectedFilter.type === 'user_category') {
+       matchesFilter = !!q.userCategory && (q.category || 'General') === selectedFilter.category;
+    }
+
+    return matchesSearch && matchesFilter;
   });
 
-  return (
-    <div style={{ minHeight: '100vh', background: 'var(--background)', color: 'white', padding: '40px 20px' }}>
-      <div style={{ maxWidth: '1200px', margin: '0 auto' }}>
-        <header style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '40px', borderBottom: '1px solid rgba(255,255,255,0.1)', paddingBottom: '20px', flexWrap: 'wrap', gap: '16px' }}>
-          <div>
-            <h1 className="font-headline" style={{ color: '#ef4444', textShadow: '0 0 10px rgba(239,68,68,0.5)', margin: 0 }}>PANEL DE CONTROL</h1>
-            <p style={{ color: 'rgba(255,255,255,0.5)', fontSize: '0.9rem', margin: '4px 0 0 0' }}>Gestor de Tarjetas de Preguntas</p>
-          </div>
-          <div style={{ display: 'flex', gap: '16px', alignItems: 'center', flexWrap: 'wrap' }}>
-            <div style={{ background: 'rgba(255,255,255,0.05)', padding: '6px 12px', borderRadius: '8px', border: '1px solid rgba(255,255,255,0.1)', display: 'flex', alignItems: 'center', gap: '8px' }}>
-              <span className="material-symbols-outlined" style={{ color: 'var(--on-surface-variant)', fontSize: '20px' }}>search</span>
-              <input 
-                type="text"
-                placeholder="Buscar pregunta..."
-                value={searchQuery}
-                onChange={(e) => setSearchQuery(e.target.value)}
-                style={{ background: 'transparent', border: 'none', color: 'white', outline: 'none', fontSize: '0.95rem', minWidth: '200px' }}
-              />
-            </div>
-            <div style={{ background: 'rgba(255,255,255,0.05)', padding: '6px 12px', borderRadius: '8px', border: '1px solid rgba(255,255,255,0.1)', display: 'flex', alignItems: 'center', gap: '8px' }}>
-              <span className="material-symbols-outlined" style={{ color: 'var(--on-surface-variant)', fontSize: '20px' }}>filter_list</span>
-              <select 
-                value={filterCategory}
-                onChange={(e) => setFilterCategory(e.target.value)}
-                style={{ background: 'transparent', border: 'none', color: 'white', outline: 'none', cursor: 'pointer', fontSize: '0.95rem' }}
-              >
-                <option value="" style={{ color: 'black' }}>Todas las Categorías</option>
-                {uniqueCategories.map(cat => (
-                  <option key={cat} value={cat} style={{ color: 'black' }}>{cat}</option>
-                ))}
-              </select>
-            </div>
-            <button 
-              onClick={openCreateModal}
-              style={{ background: 'var(--primary)', color: 'white', border: 'none', padding: '10px 20px', borderRadius: '8px', fontWeight: 700, cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '8px' }}
-            >
-              <span className="material-symbols-outlined">add</span>
-              NUEVA TARJETA
+  const asideButtonStyle = {
+    display: 'block',
+    width: '100%',
+    textAlign: 'left',
+    padding: '10px 16px',
+    borderRadius: '8px',
+    border: 'none',
+    color: 'white',
+    cursor: 'pointer',
+    marginBottom: '8px',
+    fontWeight: 600,
+    transition: 'all 0.2s',
+  };
 
-            </button>
-            <button 
-              onClick={handleLogout}
-              style={{ background: 'rgba(255,255,255,0.1)', color: 'white', border: 'none', padding: '10px 20px', borderRadius: '8px', fontWeight: 700, cursor: 'pointer', transition: 'background 0.2s' }}
-            >
-              SALIR
-            </button>
-          </div>
-        </header>
+  return (
+    <div style={{ display: 'flex', minHeight: '100vh', background: 'var(--background)', color: 'white' }}>
+      
+      {/* SIDEBAR ASIDE */}
+      <aside style={{ width: '280px', background: 'var(--surface-container-highest)', borderRight: '1px solid rgba(255,255,255,0.1)', display: 'flex', flexDirection: 'column', height: '100vh' }}>
+        <div style={{ padding: '24px 20px', borderBottom: '1px solid rgba(255,255,255,0.1)' }}>
+          <h2 className="font-headline" style={{ color: '#ef4444', textShadow: '0 0 10px rgba(239,68,68,0.5)', margin: 0, fontSize: '1.8rem' }}>PANEL ADMIN</h2>
+        </div>
+        
+        <div style={{ flex: 1, overflowY: 'auto', padding: '20px' }}>
+          <button 
+            onClick={() => setSelectedFilter({ type: 'all', category: null })}
+            style={{ ...asideButtonStyle, background: selectedFilter.type === 'all' ? 'var(--primary)' : 'rgba(255,255,255,0.05)' }}
+          >
+            <span className="material-symbols-outlined" style={{ verticalAlign: 'middle', marginRight: '8px', fontSize: '1.2rem' }}>list_alt</span>
+            Todos
+          </button>
+
+          <h3 style={{ marginTop: '24px', marginBottom: '12px', color: 'var(--secondary)', fontSize: '0.8rem', textTransform: 'uppercase', letterSpacing: '1px' }}>Mazos Locales</h3>
+          {localCategories.map(cat => (
+              <button 
+                key={cat} 
+                onClick={() => setSelectedFilter({ type: 'local_category', category: cat })}
+                style={{ ...asideButtonStyle, background: selectedFilter.type === 'local_category' && selectedFilter.category === cat ? 'rgba(56, 189, 248, 0.2)' : 'transparent', color: selectedFilter.type === 'local_category' && selectedFilter.category === cat ? '#38bdf8' : 'var(--on-surface-variant)' }}
+              >
+                {cat}
+              </button>
+          ))}
+
+          <h3 style={{ marginTop: '24px', marginBottom: '12px', color: 'var(--tertiary)', fontSize: '0.8rem', textTransform: 'uppercase', letterSpacing: '1px' }}>Usuarios</h3>
+          {userCategories.length === 0 && <p style={{ fontSize: '0.85rem', color: 'rgba(255,255,255,0.3)', padding: '0 8px' }}>Sin mazos de usuarios</p>}
+          {userCategories.map(cat => (
+              <button 
+                key={cat} 
+                onClick={() => setSelectedFilter({ type: 'user_category', category: cat })}
+                style={{ ...asideButtonStyle, background: selectedFilter.type === 'user_category' && selectedFilter.category === cat ? 'rgba(253, 224, 71, 0.2)' : 'transparent', color: selectedFilter.type === 'user_category' && selectedFilter.category === cat ? 'var(--tertiary)' : 'var(--on-surface-variant)' }}
+              >
+                {cat}
+              </button>
+          ))}
+        </div>
+        
+        <div style={{ padding: '20px', borderTop: '1px solid rgba(255,255,255,0.1)' }}>
+          <button 
+             onClick={handleLogout}
+             style={{ width: '100%', background: 'rgba(239, 68, 68, 0.1)', color: '#ef4444', border: '1px solid rgba(239, 68, 68, 0.3)', padding: '12px 20px', borderRadius: '8px', fontWeight: 700, cursor: 'pointer', display: 'flex', justifyContent: 'center', alignItems: 'center', gap: '8px', transition: 'background 0.2s' }}
+          >
+             <span className="material-symbols-outlined">logout</span>
+             SALIR
+          </button>
+        </div>
+      </aside>
+
+      {/* MAIN CONTENT */}
+      <main style={{ flex: 1, padding: '40px', height: '100vh', overflowY: 'auto' }}>
+        <div style={{ maxWidth: '1200px', margin: '0 auto' }}>
+          <header style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '40px', borderBottom: '1px solid rgba(255,255,255,0.1)', paddingBottom: '20px', flexWrap: 'wrap', gap: '16px' }}>
+            <div>
+              <h1 className="font-headline" style={{ color: 'white', margin: 0 }}>
+                {selectedFilter.type === 'all' ? 'Todas las Tarjetas' : selectedFilter.category}
+              </h1>
+              <p style={{ color: 'rgba(255,255,255,0.5)', fontSize: '0.9rem', margin: '4px 0 0 0' }}>Gestor de Tarjetas de Preguntas</p>
+            </div>
+            <div style={{ display: 'flex', gap: '16px', alignItems: 'center', flexWrap: 'wrap' }}>
+              <div style={{ background: 'rgba(255,255,255,0.05)', padding: '6px 12px', borderRadius: '8px', border: '1px solid rgba(255,255,255,0.1)', display: 'flex', alignItems: 'center', gap: '8px' }}>
+                <span className="material-symbols-outlined" style={{ color: 'var(--on-surface-variant)', fontSize: '20px' }}>search</span>
+                <input 
+                  type="text"
+                  placeholder="Buscar pregunta..."
+                  value={searchQuery}
+                  onChange={(e) => setSearchQuery(e.target.value)}
+                  style={{ background: 'transparent', border: 'none', color: 'white', outline: 'none', fontSize: '0.95rem', minWidth: '200px' }}
+                />
+              </div>
+              
+              <button 
+                onClick={openCreateModal}
+                style={{ background: 'var(--primary)', color: 'white', border: 'none', padding: '10px 20px', borderRadius: '8px', fontWeight: 700, cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '8px' }}
+              >
+                <span className="material-symbols-outlined">add</span>
+                NUEVA TARJETA
+              </button>
+            </div>
+          </header>
 
         {loading ? (
           <div style={{ textAlign: 'center', padding: '40px' }}>Cargando datos...</div>
@@ -311,6 +370,7 @@ const AdminDashboardPage = () => {
           </div>
         </div>
       )}
+      </main>
     </div>
   );
 };
