@@ -13,7 +13,7 @@ const AdminDashboardPage = () => {
   const [isSidebarOpen, setIsSidebarOpen] = useState(false);
   const [editingCard, setEditingCard] = useState(null);
   const [currentPage, setCurrentPage] = useState(1);
-  const [itemsPerPage, setItemsPerPage] = useState(window.innerWidth <= 768 ? 5 : 10);
+  const [itemsPerPage, setItemsPerPage] = useState(window.innerWidth <= 768 ? 5 : 12);
 
   const [formData, setFormData] = useState({
     question: '',
@@ -44,7 +44,7 @@ const AdminDashboardPage = () => {
 
   useEffect(() => {
     const handleResize = () => {
-      setItemsPerPage(window.innerWidth <= 768 ? 5 : 10);
+      setItemsPerPage(window.innerWidth <= 768 ? 5 : 12);
     };
     window.addEventListener('resize', handleResize);
     return () => window.removeEventListener('resize', handleResize);
