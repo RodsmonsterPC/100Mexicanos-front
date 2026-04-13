@@ -17,7 +17,7 @@ const YoVs100GameOverPage = () => {
         <div style={{ position: 'absolute', top: '50%', left: '50%', width: '60%', height: '60%', transform: 'translate(-50%, -50%)', background: 'rgba(239, 68, 68, 0.1)', borderRadius: '50%', filter: 'blur(150px)' }} />
       </div>
 
-      <div style={{ position: 'relative', zIndex: 10, minHeight: '100vh', display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '24px' }}>
+      <div style={{ position: 'relative', zIndex: 10, flex: 1, minHeight: '100vh', width: '100%', display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '24px' }}>
         <section
           className="glass-card"
           style={{

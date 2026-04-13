@@ -39,7 +39,8 @@ const RouletteOverlay = ({ onEventComplete }) => {
 
   return (
     <div style={{
-      position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.85)', zIndex: 9999,
+      position: 'fixed', top: 0, left: 0, right: 0, bottom: 0, width: '100vw', height: '100vh', 
+      background: 'rgba(0,0,0,0.95)', zIndex: 9999999,
       display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', backdropFilter: 'blur(10px)'
     }}>
       <h2 className="font-headline" style={{ color: 'white', fontSize: '3rem', marginBottom: '40px', textShadow: '0 0 20px rgba(168,85,247,0.8)' }}>
