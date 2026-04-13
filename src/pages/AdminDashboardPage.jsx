@@ -10,6 +10,7 @@ const AdminDashboardPage = () => {
   const [searchQuery, setSearchQuery] = useState('');
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [deleteCatModalOpen, setDeleteCatModalOpen] = useState(false);
+  const [isSidebarOpen, setIsSidebarOpen] = useState(false);
   const [editingCard, setEditingCard] = useState(null);
   const [formData, setFormData] = useState({
     question: '',
@@ -181,17 +182,104 @@ const AdminDashboardPage = () => {
   };
 
   return (
-    <div style={{ display: 'flex', minHeight: '100vh', background: 'var(--background)', color: 'white' }}>
+    <>
+      <style>{`
+        .admin-layout {
+          display: flex;
+          min-height: 100vh;
+          background: var(--background);
+          color: white;
+        }
+        .admin-aside {
+          width: 280px;
+          background: var(--surface-container-highest);
+          border-right: 1px solid rgba(255,255,255,0.1);
+          display: flex;
+          flex-direction: column;
+          height: 100vh;
+          position: sticky;
+          top: 0;
+          z-index: 100;
+          transition: transform 0.3s ease;
+        }
+        .hamburger-btn {
+          display: none;
+          background: transparent;
+          border: none;
+          color: white;
+          cursor: pointer;
+          font-size: 2rem;
+          padding: 8px;
+        }
+        .admin-overlay {
+          display: none;
+          position: fixed;
+          top: 0; left: 0; right: 0; bottom: 0;
+          background: rgba(0,0,0,0.5);
+          z-index: 90;
+        }
+        .cards-grid {
+          display: grid;
+          grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+          gap: 24px;
+        }
+        @media (max-width: 768px) {
+          .admin-aside {
+            position: fixed;
+            left: 0;
+            transform: translateX(-100%);
+          }
+          .admin-aside.open {
+            transform: translateX(0);
+          }
+          .hamburger-btn {
+            display: block;
+          }
+          .admin-main-wrapper {
+            padding: 20px !important;
+          }
+          .cards-grid {
+            grid-template-columns: 1fr;
+            justify-items: center;
+          }
+          .cards-grid > .glass-card {
+            width: 100%;
+            max-width: 400px;
+          }
+          .admin-overlay.open {
+            display: block;
+          }
+          .header-controls {
+            flex-direction: column;
+            width: 100%;
+          }
+          .header-controls > div {
+            width: 100%;
+            justify-content: space-between;
+          }
+          .header-title-container {
+            flex-direction: column;
+            align-items: flex-start !important;
+          }
+        }
+      `}</style>
+      <div className="admin-layout">
       
+      {/* MOBILE OVERLAY */}
+      <div 
+        className={`admin-overlay ${isSidebarOpen ? 'open' : ''}`} 
+        onClick={() => setIsSidebarOpen(false)}
+      ></div>
+
       {/* SIDEBAR ASIDE */}
-      <aside style={{ width: '280px', background: 'var(--surface-container-highest)', borderRight: '1px solid rgba(255,255,255,0.1)', display: 'flex', flexDirection: 'column', height: '100vh' }}>
+      <aside className={`admin-aside ${isSidebarOpen ? 'open' : ''}`}>
         <div style={{ padding: '24px 20px', borderBottom: '1px solid rgba(255,255,255,0.1)' }}>
           <h2 className="font-headline" style={{ color: '#ef4444', textShadow: '0 0 10px rgba(239,68,68,0.5)', margin: 0, fontSize: '1.8rem' }}>PANEL ADMIN</h2>
         </div>
         
         <div style={{ flex: 1, overflowY: 'auto', padding: '20px' }}>
           <button 
-            onClick={() => setSelectedFilter({ type: 'all', category: null })}
+            onClick={() => { setSelectedFilter({ type: 'all', category: null }); setIsSidebarOpen(false); }}
             style={{ ...asideButtonStyle, background: selectedFilter.type === 'all' ? 'var(--primary)' : 'rgba(255,255,255,0.05)' }}
           >
             <span className="material-symbols-outlined" style={{ verticalAlign: 'middle', marginRight: '8px', fontSize: '1.2rem' }}>list_alt</span>
@@ -202,7 +290,7 @@ const AdminDashboardPage = () => {
           {localCategories.map(cat => (
               <button 
                 key={cat} 
-                onClick={() => setSelectedFilter({ type: 'local_category', category: cat })}
+                onClick={() => { setSelectedFilter({ type: 'local_category', category: cat }); setIsSidebarOpen(false); }}
                 style={{ ...asideButtonStyle, background: selectedFilter.type === 'local_category' && selectedFilter.category === cat ? 'rgba(56, 189, 248, 0.2)' : 'transparent', color: selectedFilter.type === 'local_category' && selectedFilter.category === cat ? '#38bdf8' : 'var(--on-surface-variant)' }}
               >
                 {cat}
@@ -214,7 +302,7 @@ const AdminDashboardPage = () => {
           {userCategories.map(cat => (
               <button 
                 key={cat} 
-                onClick={() => setSelectedFilter({ type: 'user_category', category: cat })}
+                onClick={() => { setSelectedFilter({ type: 'user_category', category: cat }); setIsSidebarOpen(false); }}
                 style={{ ...asideButtonStyle, background: selectedFilter.type === 'user_category' && selectedFilter.category === cat ? 'rgba(253, 224, 71, 0.2)' : 'transparent', color: selectedFilter.type === 'user_category' && selectedFilter.category === cat ? 'var(--tertiary)' : 'var(--on-surface-variant)' }}
               >
                 {cat}
@@ -234,28 +322,36 @@ const AdminDashboardPage = () => {
       </aside>
 
       {/* MAIN CONTENT */}
-      <main style={{ flex: 1, padding: '40px', height: '100vh', overflowY: 'auto' }}>
+      <main style={{ flex: 1, padding: '40px', height: '100vh', overflowY: 'auto' }} className="admin-main-wrapper">
         <div style={{ maxWidth: '1200px', margin: '0 auto' }}>
           <header style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '40px', borderBottom: '1px solid rgba(255,255,255,0.1)', paddingBottom: '20px', flexWrap: 'wrap', gap: '16px' }}>
-            <div>
-              <div style={{ display: 'flex', alignItems: 'center', gap: '16px' }}>
-                <h1 className="font-headline" style={{ color: 'white', margin: 0 }}>
-                  {selectedFilter.type === 'all' ? 'Todas las Tarjetas' : selectedFilter.category}
-                </h1>
-                {selectedFilter.type !== 'all' && (
-                  <button 
-                    onClick={() => setDeleteCatModalOpen(true)}
-                    style={{ background: 'rgba(239, 68, 68, 0.2)', border: '1px solid rgba(239, 68, 68, 0.5)', color: '#fca5a5', padding: '6px 12px', borderRadius: '8px', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '6px', fontWeight: 600, transition: 'all 0.2s' }}
-                    title="Eliminar esta categoría y todas sus tarjetas"
-                  >
-                    <span className="material-symbols-outlined" style={{ fontSize: '1.2rem' }}>delete_sweep</span>
-                    ELIMINAR CATEGORÍA
-                  </button>
-                )}
+            <div className="header-title-container" style={{ display: 'flex', alignItems: 'center', gap: '16px' }}>
+              <button 
+                className="hamburger-btn" 
+                onClick={() => setIsSidebarOpen(true)}
+              >
+                <span className="material-symbols-outlined">menu</span>
+              </button>
+              <div>
+                <div style={{ display: 'flex', alignItems: 'center', gap: '16px', flexWrap: 'wrap' }}>
+                  <h1 className="font-headline" style={{ color: 'white', margin: 0 }}>
+                    {selectedFilter.type === 'all' ? 'Todas las Tarjetas' : selectedFilter.category}
+                  </h1>
+                  {selectedFilter.type !== 'all' && (
+                    <button 
+                      onClick={() => setDeleteCatModalOpen(true)}
+                      style={{ background: 'rgba(239, 68, 68, 0.2)', border: '1px solid rgba(239, 68, 68, 0.5)', color: '#fca5a5', padding: '6px 12px', borderRadius: '8px', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '6px', fontWeight: 600, transition: 'all 0.2s' }}
+                      title="Eliminar esta categoría y todas sus tarjetas"
+                    >
+                      <span className="material-symbols-outlined" style={{ fontSize: '1.2rem' }}>delete_sweep</span>
+                      ELIMINAR
+                    </button>
+                  )}
+                </div>
+                <p style={{ color: 'rgba(255,255,255,0.5)', fontSize: '0.9rem', margin: '4px 0 0 0' }}>Gestor de Tarjetas de Preguntas</p>
               </div>
-              <p style={{ color: 'rgba(255,255,255,0.5)', fontSize: '0.9rem', margin: '4px 0 0 0' }}>Gestor de Tarjetas de Preguntas</p>
             </div>
-            <div style={{ display: 'flex', gap: '16px', alignItems: 'center', flexWrap: 'wrap' }}>
+            <div className="header-controls" style={{ display: 'flex', gap: '16px', alignItems: 'center', flexWrap: 'wrap' }}>
               <div style={{ background: 'rgba(255,255,255,0.05)', padding: '6px 12px', borderRadius: '8px', border: '1px solid rgba(255,255,255,0.1)', display: 'flex', alignItems: 'center', gap: '8px' }}>
                 <span className="material-symbols-outlined" style={{ color: 'var(--on-surface-variant)', fontSize: '20px' }}>search</span>
                 <input 
@@ -280,7 +376,7 @@ const AdminDashboardPage = () => {
         {loading ? (
           <div style={{ textAlign: 'center', padding: '40px' }}>Cargando datos...</div>
         ) : (
-          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(300px, 1fr))', gap: '24px' }}>
+          <div className="cards-grid">
             {filteredQuestions.length === 0 ? (
               <div style={{ gridColumn: '1 / -1', textAlign: 'center', padding: '40px', color: 'var(--on-surface-variant)' }}>
                 No se encontraron tarjetas para esta categoría.
@@ -434,6 +530,7 @@ const AdminDashboardPage = () => {
       )}
 
     </div>
+    </>
   );
 };
 
