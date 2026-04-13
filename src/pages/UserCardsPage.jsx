@@ -15,6 +15,10 @@ const UserCardsPage = () => {
   const [cards, setCards] = useState([]);
   const [newCatName, setNewCatName] = useState('');
   
+  const [editingCategory, setEditingCategory] = useState(null);
+  const [editCategoryName, setEditCategoryName] = useState('');
+
+  
   // States for cards
   const [showCardModal, setShowCardModal] = useState(false);
   const [editingCard, setEditingCard] = useState(null);
@@ -107,6 +111,42 @@ const UserCardsPage = () => {
       console.error(err);
     }
   };
+
+  const handleEditCategory = (cat) => {
+    setEditingCategory(cat._id);
+    setEditCategoryName(cat.name);
+  };
+
+  const handleUpdateCategory = async (e, id) => {
+    e.preventDefault();
+    if (!editCategoryName.trim()) return;
+    try {
+      const res = await fetch(`${SERVER_URL}/api/user-categories/${id}`, {
+        method: 'PUT',
+        headers: { 
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${token}`
+        },
+        body: JSON.stringify({ name: editCategoryName })
+      });
+      if (res.ok) {
+        setEditingCategory(null);
+        setEditCategoryName('');
+        fetchCategories();
+      } else {
+        const data = await res.json();
+        alert(data.message);
+      }
+    } catch (err) {
+      console.error(err);
+    }
+  };
+
+  const cancelEditCategory = () => {
+    setEditingCategory(null);
+    setEditCategoryName('');
+  };
+
 
   const handleSelectCategory = async (cat) => {
     setSelectedCategory(cat);
@@ -265,8 +305,33 @@ const UserCardsPage = () => {
                 {categories.map(cat => (
                   <div key={cat._id} className="glass-card" style={{ padding: '20px', display: 'flex', flexDirection: 'column', gap: '16px' }}>
                     <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
-                      <h3 style={{ fontSize: '1.5rem', fontWeight: 800, color: 'white', margin: 0 }}>{cat.name}</h3>
-                      <button onClick={() => handleDeleteCategory(cat._id)} style={{ background: 'transparent', border: 'none', color: 'var(--error)', cursor: 'pointer' }}>
+                      {editingCategory === cat._id ? (
+                        <form onSubmit={(e) => handleUpdateCategory(e, cat._id)} style={{ display: 'flex', gap: '8px', flex: 1, marginRight: '8px' }}>
+                          <input 
+                            type="text" 
+                            value={editCategoryName} 
+                            onChange={(e) => setEditCategoryName(e.target.value)} 
+                            style={{ flex: 1, padding: '8px', borderRadius: '4px', border: 'none', background: 'rgba(255,255,255,0.2)', color: 'white' }}
+                            autoFocus
+                            required
+                          />
+                          <button type="submit" style={{ background: 'var(--primary)', color: 'white', border: 'none', borderRadius: '4px', padding: '4px 8px', cursor: 'pointer' }}>
+                            <span className="material-symbols-outlined" style={{ fontSize: '1.25rem' }}>check</span>
+                          </button>
+                          <button type="button" onClick={cancelEditCategory} style={{ background: 'var(--error)', color: 'white', border: 'none', borderRadius: '4px', padding: '4px 8px', cursor: 'pointer' }}>
+                            <span className="material-symbols-outlined" style={{ fontSize: '1.25rem' }}>close</span>
+                          </button>
+                        </form>
+                      ) : (
+                        <div style={{ display: 'flex', alignItems: 'center', gap: '8px', flex: 1, overflow: 'hidden' }}>
+                          <h3 style={{ fontSize: '1.5rem', fontWeight: 800, color: 'white', margin: 0, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{cat.name}</h3>
+                          <button onClick={() => handleEditCategory(cat)} style={{ background: 'transparent', border: 'none', color: 'var(--secondary)', cursor: 'pointer', padding: 0, display: 'flex' }} title="Editar Nombre">
+                            <span className="material-symbols-outlined" style={{ fontSize: '1.2rem' }}>edit</span>
+                          </button>
+                        </div>
+                      )}
+                      
+                      <button onClick={() => handleDeleteCategory(cat._id)} style={{ background: 'transparent', border: 'none', color: 'var(--error)', cursor: 'pointer', marginLeft: 'auto' }} title="Eliminar Mazo">
                         <span className="material-symbols-outlined">delete</span>
                       </button>
                     </div>
