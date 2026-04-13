@@ -407,18 +407,18 @@ const YoVs100GamePage = () => {
                   Comodines
                </h3>
                <div className="stat-val" style={{ fontSize: '2rem', fontWeight: 900, color: '#f59e0b', marginTop: '8px' }}>{wildcards}</div>
+             </div>
+
+             {/* Action Buttons */}
+             <div className="yovs100-actions" style={{ marginTop: 'auto', display: 'flex', flexDirection: 'column', gap: '16px' }}>
                <button 
                  onClick={handleUseWildcard}
                  disabled={wildcards <= 0}
                  className="btn-primary"
-                 style={{ width: '100%', marginTop: '16px', padding: '12px', background: wildcards > 0 ? '#f59e0b' : 'rgba(255,255,255,0.1)', cursor: wildcards > 0 ? 'pointer' : 'not-allowed', color: wildcards > 0 ? 'white' : 'rgba(255,255,255,0.3)', border: 'none' }}
+                 style={{ width: '100%', padding: '16px', background: wildcards > 0 ? '#f59e0b' : 'rgba(255,255,255,0.1)', cursor: wildcards > 0 ? 'pointer' : 'not-allowed', color: wildcards > 0 ? 'white' : 'rgba(255,255,255,0.3)', border: 'none' }}
                >
                  Usar Comodín
                </button>
-             </div>
-
-             {/* Terminar Partida Button */}
-             <div className="yovs100-stat-endbtn" style={{ marginTop: 'auto' }}>
                <button 
                  onClick={() => endGame(score, round)}
                  className="btn-secondary"

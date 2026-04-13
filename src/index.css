@@ -1008,7 +1008,7 @@ body {
     grid-template-areas: 
       "round round round"
       "points lives wildcards"
-      "endbtn endbtn endbtn";
+      "actions actions actions";
     gap: 12px;
   }
   
@@ -1016,7 +1016,21 @@ body {
   .yovs100-stat-points { grid-area: points; }
   .yovs100-stat-lives { grid-area: lives; }
   .yovs100-stat-wildcards { grid-area: wildcards; }
-  .yovs100-stat-endbtn { grid-area: endbtn; margin-top: 0 !important; }
+  
+  .yovs100-actions { 
+    grid-area: actions; 
+    display: flex;
+    flex-direction: row !important;
+    gap: 12px;
+    margin-top: 0 !important;
+  }
+  
+  .yovs100-actions > button {
+    flex: 1;
+    font-size: 0.95rem !important;
+    padding: 12px !important;
+    margin-top: 0 !important;
+  }
 
   .glass-card.yovs100-stat-card {
     padding: 12px !important;
@@ -1037,6 +1051,7 @@ body {
   }
 
   .yovs100-question { order: 2; }
+  .yovs100-question h2 { font-size: 1.6rem !important; }
   .yovs100-answers { order: 3; }
   .yovs100-input-area { 
     order: 1; 
