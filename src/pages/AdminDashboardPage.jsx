@@ -19,11 +19,11 @@ const AdminDashboardPage = () => {
     question: '',
     category: 'General',
     answers: [
-      { text: '', points: 0 },
-      { text: '', points: 0 },
-      { text: '', points: 0 },
-      { text: '', points: 0 },
-      { text: '', points: 0 },
+      { text: '', points: 0, synonyms: [], showSynonyms: false },
+      { text: '', points: 0, synonyms: [], showSynonyms: false },
+      { text: '', points: 0, synonyms: [], showSynonyms: false },
+      { text: '', points: 0, synonyms: [], showSynonyms: false },
+      { text: '', points: 0, synonyms: [], showSynonyms: false },
     ]
   });
 
@@ -110,11 +110,11 @@ const AdminDashboardPage = () => {
       question: '',
       category: 'General',
       answers: [
-        { text: '', points: 0 },
-        { text: '', points: 0 },
-        { text: '', points: 0 },
-        { text: '', points: 0 },
-        { text: '', points: 0 },
+        { text: '', points: 0, synonyms: [], showSynonyms: false },
+        { text: '', points: 0, synonyms: [], showSynonyms: false },
+        { text: '', points: 0, synonyms: [], showSynonyms: false },
+        { text: '', points: 0, synonyms: [], showSynonyms: false },
+        { text: '', points: 0, synonyms: [], showSynonyms: false },
       ]
     });
     setIsModalOpen(true);
@@ -125,7 +125,7 @@ const AdminDashboardPage = () => {
     setFormData({
       question: card.question,
       category: card.category || 'General',
-      answers: card.answers.map(a => ({ text: a.text, points: a.points }))
+      answers: card.answers.map(a => ({ text: a.text, points: a.points, synonyms: a.synonyms || [], showSynonyms: false }))
     });
     setIsModalOpen(true);
   };
@@ -504,28 +504,72 @@ const AdminDashboardPage = () => {
               <div>
                 <label style={{ display: 'block', marginBottom: '12px', color: 'var(--secondary)', fontWeight: 600, fontSize: '0.9rem' }}>Respuestas (Obligatorio 5)</label>
                 {formData.answers.map((a, i) => (
-                  <div key={i} style={{ display: 'flex', gap: '12px', marginBottom: '12px' }}>
-                    <div style={{ flex: 1 }}>
-                      <input 
-                        type="text" 
-                        placeholder={`Respuesta #${i + 1}`}
-                        value={a.text}
-                        onChange={(e) => handleAnswerChange(i, 'text', e.target.value)}
-                        required
-                        style={{ width: '100%', padding: '10px', background: 'rgba(255,255,255,0.05)', border: '1px solid rgba(255,255,255,0.1)', color: 'white', borderRadius: '8px' }}
-                      />
+                  <div key={i} style={{ display: 'flex', flexDirection: 'column', gap: '8px', marginBottom: '12px', paddingBottom: '12px', borderBottom: i < 4 ? '1px solid rgba(255,255,255,0.1)' : 'none' }}>
+                    <div style={{ display: 'flex', gap: '12px' }}>
+                      <div style={{ flex: 1 }}>
+                        <input 
+                          type="text" 
+                          placeholder={`Respuesta #${i + 1}`}
+                          value={a.text}
+                          onChange={(e) => handleAnswerChange(i, 'text', e.target.value)}
+                          required
+                          style={{ width: '100%', padding: '10px', background: 'rgba(255,255,255,0.05)', border: '1px solid rgba(255,255,255,0.1)', color: 'white', borderRadius: '8px' }}
+                        />
+                      </div>
+                      <div style={{ width: '100px' }}>
+                        <input 
+                          type="number" 
+                          min="1"
+                          placeholder="Pts"
+                          value={a.points || ''}
+                          onChange={(e) => handleAnswerChange(i, 'points', e.target.value)}
+                          required
+                          style={{ width: '100%', padding: '10px', background: 'rgba(255,255,255,0.05)', border: '1px solid rgba(255,255,255,0.1)', color: 'white', borderRadius: '8px', textAlign: 'center' }}
+                        />
+                      </div>
                     </div>
-                    <div style={{ width: '100px' }}>
-                      <input 
-                        type="number" 
-                        min="1"
-                        placeholder="Pts"
-                        value={a.points || ''}
-                        onChange={(e) => handleAnswerChange(i, 'points', e.target.value)}
-                        required
-                        style={{ width: '100%', padding: '10px', background: 'rgba(255,255,255,0.05)', border: '1px solid rgba(255,255,255,0.1)', color: 'white', borderRadius: '8px', textAlign: 'center' }}
-                      />
-                    </div>
+                    {!a.showSynonyms && (
+                      <button 
+                        type="button"
+                        onClick={() => handleAnswerChange(i, 'showSynonyms', true)}
+                        style={{ alignSelf: 'flex-start', background: 'transparent', color: 'var(--primary)', border: 'none', cursor: 'pointer', fontSize: '0.85rem', display: 'flex', alignItems: 'center', gap: '4px' }}
+                      >
+                        <span className="material-symbols-outlined" style={{ fontSize: '1rem' }}>add</span> Añadir sinónimos (opcional)
+                      </button>
+                    )}
+                    {a.showSynonyms && (
+                      <div style={{ padding: '8px', background: 'rgba(0,0,0,0.2)', borderRadius: '8px', marginTop: '4px' }}>
+                         <div style={{ display: 'flex', flexWrap: 'wrap', gap: '8px', marginBottom: '8px' }}>
+                            {a.synonyms && a.synonyms.map((syn, synIdx) => (
+                               <span key={synIdx} style={{ background: 'var(--primary)', color: 'white', padding: '4px 8px', borderRadius: '16px', fontSize: '0.8rem', display: 'flex', alignItems: 'center', gap: '4px' }}>
+                                  {syn}
+                                  <button type="button" onClick={() => {
+                                     const newSyn = a.synonyms.filter((_, idx) => idx !== synIdx);
+                                     handleAnswerChange(i, 'synonyms', newSyn);
+                                  }} style={{ background:'transparent', border:'none', color:'white', cursor:'pointer', padding: 0, display: 'flex', alignItems: 'center' }}>
+                                     <span className="material-symbols-outlined" style={{ fontSize: '1.2rem' }}>close</span>
+                                  </button>
+                               </span>
+                            ))}
+                         </div>
+                         <input 
+                            type="text"
+                            placeholder="Escribe un sinónimo y presiona ENTER"
+                            onKeyDown={(e) => {
+                               if (e.key === 'Enter') {
+                                  e.preventDefault();
+                                  const val = e.target.value.trim();
+                                  if (val && !(a.synonyms || []).includes(val)) {
+                                     const newSyn = [...(a.synonyms || []), val];
+                                     handleAnswerChange(i, 'synonyms', newSyn);
+                                     e.target.value = '';
+                                  }
+                               }
+                            }}
+                            style={{ width: '100%', padding: '8px', background: 'rgba(255,255,255,0.05)', border: '1px solid rgba(255,255,255,0.1)', color: 'white', borderRadius: '4px', fontSize: '0.85rem' }}
+                         />
+                      </div>
+                    )}
                   </div>
                 ))}
               </div>

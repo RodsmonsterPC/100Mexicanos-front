@@ -26,11 +26,11 @@ const UserCardsPage = () => {
   const [currentPage, setCurrentPage] = useState(1);
   const [cardsPerPage, setCardsPerPage] = useState(window.innerWidth > 768 ? 10 : 5);
   const [answers, setAnswers] = useState([
-    { text: '', points: '' },
-    { text: '', points: '' },
-    { text: '', points: '' },
-    { text: '', points: '' },
-    { text: '', points: '' },
+    { text: '', points: '', synonyms: [], showSynonyms: false },
+    { text: '', points: '', synonyms: [], showSynonyms: false },
+    { text: '', points: '', synonyms: [], showSynonyms: false },
+    { text: '', points: '', synonyms: [], showSynonyms: false },
+    { text: '', points: '', synonyms: [], showSynonyms: false },
   ]);
   const [msg, setMsg] = useState('');
 
@@ -173,16 +173,16 @@ const UserCardsPage = () => {
     if (card) {
       setEditingCard(card);
       setQuestionText(card.question);
-      setAnswers(card.answers.map(a => ({ text: a.text, points: a.points }))); // map to ignore _id temporarily in form
+      setAnswers(card.answers.map(a => ({ text: a.text, points: a.points, synonyms: a.synonyms || [], showSynonyms: false }))); // map to ignore _id temporarily in form
     } else {
       setEditingCard(null);
       setQuestionText('');
       setAnswers([
-        { text: '', points: '' },
-        { text: '', points: '' },
-        { text: '', points: '' },
-        { text: '', points: '' },
-        { text: '', points: '' },
+        { text: '', points: '', synonyms: [], showSynonyms: false },
+        { text: '', points: '', synonyms: [], showSynonyms: false },
+        { text: '', points: '', synonyms: [], showSynonyms: false },
+        { text: '', points: '', synonyms: [], showSynonyms: false },
+        { text: '', points: '', synonyms: [], showSynonyms: false },
       ]);
     }
     setShowCardModal(true);
@@ -192,7 +192,7 @@ const UserCardsPage = () => {
     e.preventDefault();
     
     // Validar formato
-    const cleanAnswers = answers.map(a => ({ text: a.text.trim(), points: Number(a.points) }));
+    const cleanAnswers = answers.map(a => ({ text: a.text.trim(), points: Number(a.points), synonyms: a.synonyms || [] }));
     if (!questionText.trim() || cleanAnswers.some(a => !a.text || !a.points)) {
       setMsg('Completa la pregunta y los textos/puntos de las 5 respuestas.');
       return;
@@ -461,25 +461,75 @@ const UserCardsPage = () => {
                  <div style={{ marginTop: '16px' }}>
                     <label style={{ fontSize: '0.9rem', color: 'var(--tertiary)', fontWeight: 'bold' }}>5 Respuestas (De mayor a menor puntaje)</label>
                     {answers.map((ans, idx) => (
-                       <div key={idx} style={{ display: 'flex', gap: '16px', marginTop: '12px' }}>
-                          <input 
-                            type="text" value={ans.text} required placeholder={`Respuesta ${idx + 1}`}
-                            onChange={e => {
-                               const newAnswers = [...answers];
-                               newAnswers[idx].text = e.target.value;
-                               setAnswers(newAnswers);
-                            }}
-                            style={{ flex: 1, padding: '12px', borderRadius: '8px', background: 'rgba(0,0,0,0.3)', border: '1px solid rgba(255,255,255,0.1)', color: 'white' }}
-                          />
-                          <input 
-                            type="number" value={ans.points} required min="1" max="100" placeholder="Puntos"
-                            onChange={e => {
-                               const newAnswers = [...answers];
-                               newAnswers[idx].points = e.target.value;
-                               setAnswers(newAnswers);
-                            }}
-                            style={{ width: '100px', padding: '12px', borderRadius: '8px', background: 'rgba(0,0,0,0.3)', border: '1px solid rgba(255,255,255,0.1)', color: 'white' }}
-                          />
+                       <div key={idx} style={{ display: 'flex', flexDirection: 'column', gap: '8px', marginTop: '12px', borderBottom: idx < 4 ? '1px solid rgba(255,255,255,0.1)' : 'none', paddingBottom: '12px' }}>
+                         <div style={{ display: 'flex', gap: '16px' }}>
+                            <input 
+                              type="text" value={ans.text} required placeholder={`Respuesta ${idx + 1}`}
+                              onChange={e => {
+                                 const newAnswers = [...answers];
+                                 newAnswers[idx].text = e.target.value;
+                                 setAnswers(newAnswers);
+                              }}
+                              style={{ flex: 1, padding: '12px', borderRadius: '8px', background: 'rgba(0,0,0,0.3)', border: '1px solid rgba(255,255,255,0.1)', color: 'white' }}
+                            />
+                            <input 
+                              type="number" value={ans.points} required min="1" max="100" placeholder="Puntos"
+                              onChange={e => {
+                                 const newAnswers = [...answers];
+                                 newAnswers[idx].points = e.target.value;
+                                 setAnswers(newAnswers);
+                              }}
+                              style={{ width: '100px', padding: '12px', borderRadius: '8px', background: 'rgba(0,0,0,0.3)', border: '1px solid rgba(255,255,255,0.1)', color: 'white' }}
+                            />
+                         </div>
+                         {!ans.showSynonyms && (
+                           <button 
+                             type="button"
+                             onClick={() => {
+                                 const newAnswers = [...answers];
+                                 newAnswers[idx].showSynonyms = true;
+                                 setAnswers(newAnswers);
+                             }}
+                             style={{ alignSelf: 'flex-start', background: 'transparent', color: 'var(--tertiary)', border: 'none', cursor: 'pointer', fontSize: '0.85rem', display: 'flex', alignItems: 'center', gap: '4px' }}
+                           >
+                             <span className="material-symbols-outlined" style={{ fontSize: '1rem' }}>add</span> Añadir sinónimos (opcional)
+                           </button>
+                         )}
+                         {ans.showSynonyms && (
+                           <div style={{ padding: '8px', background: 'rgba(0,0,0,0.2)', borderRadius: '8px', marginTop: '4px' }}>
+                              <div style={{ display: 'flex', flexWrap: 'wrap', gap: '8px', marginBottom: '8px' }}>
+                                 {ans.synonyms && ans.synonyms.map((syn, synIdx) => (
+                                    <span key={synIdx} style={{ background: 'var(--tertiary)', color: 'black', padding: '4px 8px', borderRadius: '16px', fontSize: '0.8rem', display: 'flex', alignItems: 'center', gap: '4px', fontWeight: 'bold' }}>
+                                       {syn}
+                                       <button type="button" onClick={() => {
+                                          const newAnswers = [...answers];
+                                          newAnswers[idx].synonyms = ans.synonyms.filter((_, i) => i !== synIdx);
+                                          setAnswers(newAnswers);
+                                       }} style={{ background:'transparent', border:'none', color:'black', cursor:'pointer', padding: 0, display: 'flex', alignItems: 'center' }}>
+                                          <span className="material-symbols-outlined" style={{ fontSize: '1.2rem' }}>close</span>
+                                       </button>
+                                    </span>
+                                 ))}
+                              </div>
+                              <input 
+                                 type="text"
+                                 placeholder="Escribe un sinónimo y presiona ENTER"
+                                 onKeyDown={(e) => {
+                                    if (e.key === 'Enter') {
+                                       e.preventDefault();
+                                       const val = e.target.value.trim();
+                                       if (val && !(ans.synonyms || []).includes(val)) {
+                                          const newAnswers = [...answers];
+                                          newAnswers[idx].synonyms = [...(ans.synonyms || []), val];
+                                          setAnswers(newAnswers);
+                                          e.target.value = '';
+                                       }
+                                    }
+                                 }}
+                                 style={{ width: '100%', padding: '8px', background: 'rgba(0,0,0,0.3)', border: '1px solid rgba(255,255,255,0.1)', color: 'white', borderRadius: '4px', fontSize: '0.85rem' }}
+                              />
+                           </div>
+                         )}
                        </div>
                     ))}
                  </div>
